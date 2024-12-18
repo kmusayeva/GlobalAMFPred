@@ -15,7 +15,9 @@ from mlp.multi_label_propagation import *
 from mlp.thresholding import *
 from skmultilearn.adapt import MLkNN
 from skmultilearn.problem_transform import LabelPowerset
-
+from skmultilearn.model_selection import iterative_train_test_split
+from skmultilearn.model_selection import IterativeStratification
+import optuna
 
 class MLClassification(SpeciesClassification):
     """
@@ -27,7 +29,7 @@ class MLClassification(SpeciesClassification):
     def __init__(self, species: Species, cv: int = 5) -> None:
         super().__init__(species, cv)
         self.scores = [
-            ("F1", f1_score, {"average": "samples"}),
+            #("F1", f1_score, {"average": "samples"}),
             ("Macro-F1", f1_score, {"average": "macro"}),
             ("Micro-F1", f1_score, {"average": "micro"}),
             ("HL", hamming_loss, {}),
@@ -39,30 +41,31 @@ class MLClassification(SpeciesClassification):
         self.stds = pd.DataFrame(index=self.score_names, columns=self.methods)
         self.k, self.proportions = 2, [0.8, 0.2]
 
-    def evaluate(self, nshuffle: int) -> None:
+
+    def evaluate(self) -> None:
         """
         Evaluate the classification model using stratified sampling method.
-        @param nshuffle: the number of times to shuffle the data.
         """
         print(f">>>Proportions for stratified sampling: {self.proportions}")
-        result_nsh = {key: pd.DataFrame(columns=self.score_names, index=range(nshuffle))
+        result_nsh = {key: pd.DataFrame(columns=self.score_names, index=range(1))
                       for key in self.result.columns}
         # kf = KFold(n_splits=self.cv, shuffle=True, random_state=29)
-        for fold in range(nshuffle):
-            # for fold, (train_indices, test_indices) in enumerate(kf.split(self.species.X), 1):
-            self.species.X, self.species.Y = shuffle(self.species.X, self.species.Y, random_state=23)
-            subsets = iterative_stratification(self.species.Y, k=self.k, proportions=self.proportions)
-            train_indices, test_indices = subsets
+        stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
+        train_indices, valid_indices = next(stratifier.split(self.species.X_train, self.species.Y_train))
+
+        for fold in range(1):
             for method in self.methods:
                 func_name = f"{method}_predict"
                 if hasattr(self, func_name):
                     func = getattr(self, func_name)
-                    preds = func(train_indices, test_indices)
+                    preds = func(train_indices, valid_indices)
                     for metric, scoring_func, kwargs in self.scores:
                         result_nsh[method].loc[fold, metric] = round(
-                            scoring_func(self.species.Y[test_indices], preds, **kwargs), 3)
+                            scoring_func(self.species.Y_train[valid_indices], preds, **kwargs), 3)
                 else:
                     raise AttributeError(f"Method {func_name} is not defined in the class.")
+
+
 
         for method_name in list(self.methods):
             self.result[method_name] = result_nsh[method_name].mean()
@@ -71,7 +74,7 @@ class MLClassification(SpeciesClassification):
 
     def printResults(self):
         print(f">>>Results: \n{self.result.to_string()}")
-        print(f"Standard deviations: \n{self.stds.to_string()}")
+        #print(f"Standard deviations: \n{self.stds.to_string()}")
 
 
     def ecc_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
@@ -118,19 +121,47 @@ class MLClassification(SpeciesClassification):
         preds = mlknn.predict(self.species.X[test_indices])
         return preds
 
-    def hf_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def hf_predict(self) -> np.ndarray:
         """
         Prediction using harmonic function.
         @param train_indices
         @param test_indices
         @return predictions
         """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        sigma, nn = 0.5, 5
-        X_dist_squared = dist_matrix(self.species.X) ** 2
-        soft_labels = hf(X_dist_squared, Y_train, train_indices, test_indices, nn=nn, sigma=sigma)
-        preds = lco(soft_labels, Y_test)  # apply one of the thresholding strategy: lco, cmn, or basic at 0.5
-        return preds
+        
+        X_dist_squared = dist_matrix(StandardScaler().fit_transform(self.X_train_valid)) ** 2
+        Y_train  = self.Y_train_valid[self.train_indices]
+        Y_test   = self.Y_train_valid[self.valid_indices]
+
+        def objective_hf(trial):
+            # Define CatBoost parameters
+            sigma = trial.suggest_categorical("sigma", [0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5])
+            nn = trial.suggest_categorical("nn", [1, 3, 5, 10])
+            soft_labels = hf(X_dist_squared, Y_train, self.train_indices, self.valid_indices, nn=nn, sigma=sigma)
+            preds = basic(soft_labels, Y_test)    
+            f1 = f1_score(Y_test, preds, average="micro")
+            return f1
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective_hf, n_trials=50, timeout=600)
+        
+        best_trial = study.best_trial
+
+        print(best_trial.params["nn"])
+
+        print(best_trial.params["sigma"])
+
+        
+
+        #X_dist_squared = dist_matrix(StandardScaler().fit_transform(self.species.X)) ** 2
+        
+        #soft_labels = hf(X_dist_squared, Y_train, self.train_indices, self.valid_indices, nn=nn, sigma=sigma)
+
+
+
+        return 1
+
+
 
     def cm_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
         """

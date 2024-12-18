@@ -1,6 +1,6 @@
 """
 Creates species from the species data set (this path should be set in the global_vars)
-and the taxonomic level: order, family, gender or species.
+and the taxonomic level: order, family, genus or species.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -14,25 +14,28 @@ from typing import List, Tuple, Dict, Optional
 
 
 class Species:
-    def __init__(self, tax_level: str, x_dim: int, env_vars: Optional[List[str]] = None,
-                 species_pattern: Optional[List[str]] = None,
-                 species: Optional[List[str]] = None, is_global_amf: Optional[bool] = False) -> None:
+    def __init__(self, 
+                tax_level: str, 
+                x_dim: int, 
+                env_vars: Optional[List[str]] = None,
+                species_pattern: Optional[List[str]] = None,
+                species: Optional[List[str]] = None) -> None:
+
         """
         Initialize the Species object with X as environmental variables, Y abundancy matrix,
-        Yb absence/presence matrix, Y_top top most frequent species. Calculate label ditrbution,
-        class imbalance information.
-        @param tax_level: taxonomic level: order, family, gender, or species
+        Yb absence/presence matrix, Y_top top most frequent species.
+        Calculate label ditrbution, class imbalance information.
+        @param tax_level: taxonomic level: order, family, genus, or species
         @param x_dim: total number of variables in input data
         @param env_vars: list of selected environmental/input variables
         @param species_pattern: select species based on their names, such as "glo"
         @param species: list of species such as ["Glomus", "Rhizophagus"]
-        @param is_global_amf: if true, reads from GlobalAMFungi/Species directory, otherwise from data/tax_level directory
         """
         self.level = tax_level
         self.env_vars = env_vars
         self.x_dim = x_dim
         self.is_binary = False
-        self.X, self.Y = self.__read_data(is_global_amf)
+        self.X, self.Y = self.__read_data()
         self.Y = self.Y.loc[:, (self.Y != 0).any(axis=0)]
         if species is not None:
             self.Y = self.Y[species]
@@ -45,14 +48,13 @@ class Species:
         self.Y_top = self.Yb
         self.label_distri = self.label_info()
 
-    def __read_data(self, is_global_amf: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def __read_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Read data from the specified file and return environmental variables and species data.
-        @param is_global_amf: read from global amf data?
         @return: input, output matrices
         """
-        data_dir = 'global_amf_dir' if is_global_amf else 'data_dir'
-        file_name = os.path.join(global_vars[data_dir], f'{self.level}/{self.level}.xlsx')
+        data_dir = 'data_dir'
+        file_name = os.path.join(global_vars[data_dir], f'{self.level}.xlsx')
         try:
             data = read_file(file_name)
         except ValueError as err:
@@ -60,7 +62,7 @@ class Species:
             sys.exit(1)
         if self.env_vars is None:
             self.env_vars = data.columns.tolist()[:self.x_dim]
-        return data[self.env_vars], data.iloc[:, self.x_dim:]
+        return data[self.env_vars], data.iloc[:, (self.x_dim+1):]
 
     def label_info(self) -> Dict[str, float]:
         """Calculate label distribution, density, and average class imbalance."""
@@ -188,6 +190,6 @@ class Species:
         """
         Prints out label distribution.
         """
-        print(f">>>Frequencies of top species: \n{self.freq.to_string()}")
+        print(f">>>Relative frequencies (%) of top species: \n{self.freq.to_string()}")
         print(f">>>The number of examples is {self.X.shape[0]} and the number of labels is {self.Y.shape[1]}.")
         print('\n'.join(f"{key}: {value}" for key, value in self.label_distri.items()))
