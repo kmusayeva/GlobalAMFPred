@@ -18,6 +18,8 @@ from skmultilearn.problem_transform import LabelPowerset
 from skmultilearn.model_selection import iterative_train_test_split
 from skmultilearn.model_selection import IterativeStratification
 import optuna
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
 
 class MLClassification(SpeciesClassification):
     """
@@ -129,35 +131,33 @@ class MLClassification(SpeciesClassification):
         @return predictions
         """
         
-        X_dist_squared = dist_matrix(StandardScaler().fit_transform(self.X_train_valid)) ** 2
-        Y_train  = self.Y_train_valid[self.train_indices]
-        Y_test   = self.Y_train_valid[self.valid_indices]
+        X_train_valid_dist_squared = dist_matrix(StandardScaler().fit_transform(self.X_train_valid)) ** 2 ### training/validation data
+        Y_train  = self.Y_train_valid[self.train_idx]
+        Y_valid   = self.Y_train_valid[self.valid_idx]
 
         def objective_hf(trial):
-            # Define CatBoost parameters
-            sigma = trial.suggest_categorical("sigma", [0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5])
-            nn = trial.suggest_categorical("nn", [1, 3, 5, 10])
-            soft_labels = hf(X_dist_squared, Y_train, self.train_indices, self.valid_indices, nn=nn, sigma=sigma)
-            preds = basic(soft_labels, Y_test)    
-            f1 = f1_score(Y_test, preds, average="micro")
+            sigma = trial.suggest_categorical("sigma", [0.3, 0.5, 0.7, 0.9])
+            nn = trial.suggest_categorical("nn", [5, 7, 10])
+            soft_labels = hf(X_train_valid_dist_squared, Y_train, self.train_idx, self.valid_idx, nn=nn, sigma=sigma)
+            preds = basic(soft_labels, Y_valid)    
+            f1 = f1_score(Y_valid, preds, average="macro")
             return f1
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective_hf, n_trials=50, timeout=600)
+        study.optimize(objective_hf, n_trials=100, timeout=600)
         
         best_trial = study.best_trial
 
-        print(best_trial.params["nn"])
-
-        print(best_trial.params["sigma"])
-
+        nn = best_trial.params["nn"]
+        sigma = best_trial.params["sigma"]
+        print(f"nn:{nn}, sigma:{sigma}")
+        ### evaluation
+        X_test_dist_squared = dist_matrix(StandardScaler().fit_transform(self.X)) ** 2 ### all data
+        soft_labels = hf(X_test_dist_squared, self.Y_train_valid, self.train_valid_idx, self.test_idx, nn=nn, sigma=sigma)
+        preds = basic(soft_labels, self.Y_train_valid)    
         
-
-        #X_dist_squared = dist_matrix(StandardScaler().fit_transform(self.species.X)) ** 2
-        
-        #soft_labels = hf(X_dist_squared, Y_train, self.train_indices, self.valid_indices, nn=nn, sigma=sigma)
-
-
+        for metric, scoring_func, kwargs in self.scores:
+            print(round(scoring_func(self.Y[self.test_idx], preds, **kwargs), 3))
 
         return 1
 
@@ -178,6 +178,8 @@ class MLClassification(SpeciesClassification):
         preds = basic(soft_labels, Y_test)  # apply one of the thresholding strategy: lco, cmn, or basic at 0.5
         return preds
 
+
+
     def knn_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
         """
         Predict using k-nearest neighbour.
@@ -186,13 +188,45 @@ class MLClassification(SpeciesClassification):
         @param test_indices
         @return predictions
         """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
+        """ Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
         preds = np.zeros_like(Y_test)
         normalized_X = StandardScaler().fit_transform(self.species.X)
         for s in range(Y_train.shape[1]):
             knn = KNeighborsClassifier(n_neighbors=1).fit(normalized_X[train_indices], Y_train[:, s])
             preds[:, s] = knn.predict(normalized_X[test_indices])
+        """
+
+        normalized_X = StandardScaler().fit_transform(self.X_train_valid)
+
+        def objective_knn(trial):
+            nn = trial.suggest_categorical("nn", list(range(10)))
+
+            for s in range(Y_train.shape[1]):
+                    knn = KNeighborsClassifier(n_neighbors=nn).fit(normalized_X[self.train_idx], self.Y_train_valid[self.train_idx, s])
+                    preds[:, s] = knn.predict(normalized_X[self.test_idx])
+
+
+
+    
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective_knn, n_trials=100, timeout=600)
+        
+        best_trial = study.best_trial
+
+
+        print("Number of finished trials: ", len(study.trials))
+        print("Best trial:")
+        best_trial = study.best_trial
+
+        print("  Value: {}".format(best_trial.value))
+        print("  Params: ")
+    
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
         return preds
+
+
 
     def rf_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
         """

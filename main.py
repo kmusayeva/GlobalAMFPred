@@ -20,31 +20,29 @@ k = 20
 species.get_top_species(k)
 
 
+"""
 stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
-train_valid_indices, test_indices = next(stratifier.split(species.X, species.Y_top))
-stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
-train_indices, valid_indices = next(stratifier.split(species.X.iloc[train_valid_indices], species.Y_top.iloc[train_valid_indices]))
+
+train_valid_idx, test_idx = next(stratifier.split(species.X.to_numpy(), species.Y.to_numpy()))
+
+X_train_valid, Y_train_valid = species.X.to_numpy()[train_valid_idx], species.Y.to_numpy()[train_valid_idx]
+
+stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.25, 0.75])
+
+train_idx, valid_idx = next(stratifier.split(X_train_valid, Y_train_valid))
+
+X_dist_squared = dist_matrix(StandardScaler().fit_transform(X_train_valid)) ** 2
+
+print(X_dist_squared[valid_idx])
 
 
-print({int(x) for x in train_indices}<={int(x) for x in train_valid_indices})
+X_dist_squared = dist_matrix(StandardScaler().fit_transform(species.X.to_numpy())) ** 2
 
-
-print(train_valid_indices)
-print(train_indices)
+print(X_dist_squared[test_idx])
+"""
 
 # print species info
-#species.print_info()
+species.print_info()
 
-#model = MLClassification(species)
-#model.hf_predict()
-
-#train_indices, valid_indices = next(stratifier.split(model.species.X[train_valid_indices], model.species.Y[train_valid_indices]))
-
-#print(valid_indices)
-#print(test_indices)
-
-
-# perform multi-label classification
-#model = MLClassification(species)
-#model.evaluate()
-#model.printResults()
+model = MLClassification(species)
+model.hf_predict()

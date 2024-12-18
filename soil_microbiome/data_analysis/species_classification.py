@@ -22,15 +22,21 @@ class SpeciesClassification:
 
     def __init__(self, species, cv=5):
         
-        self.species = species
-        
         self.cv = cv
 
-        self.X_train_valid, self.Y_train_valid, self.X_test, self.Y_test = iterative_train_test_split(species.X.to_numpy(), species.Y_top.to_numpy(), test_size = 0.2)
+        self.X = species.X.to_numpy()
         
+        self.Y = species.Y_top.to_numpy()
+
         stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
-        
-        self.train_indices, self.valid_indices = next(stratifier.split(self.X_train_valid, self.Y_train_valid))
+
+        self.train_valid_idx, self.test_idx = next(stratifier.split(species.X, species.Y))
+
+        self.X_train_valid, self.Y_train_valid = self.X[self.train_valid_idx], self.Y[self.train_valid_idx]
+
+        stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.25, 0.75])
+
+        self.train_idx, self.valid_idx = next(stratifier.split(self.X_train_valid, self.Y_train_valid))
 
         self.species_names = species.Y_top.columns.tolist()
 
