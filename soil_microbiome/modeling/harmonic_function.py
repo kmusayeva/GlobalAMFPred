@@ -17,15 +17,13 @@ class HarmonicFunction:
         self.iters = iters
         self.X = None
         self.Y_train = None
-        self.train_indices = None
 
 
-    def fit(self, X: np.ndarray, Y_train: np.ndarray, train_indices: np.ndarray):
+    def fit(self, X: np.ndarray, Y_train: np.ndarray):
         """
         Args:
             dist_matrix_squared (np.ndarray): Precomputed Euclidean distance matrix.
             Y_train (np.ndarray): Training labels or response matrix.
-            train_indices (np.ndarray): Indices of training data points.
         """
         
         #if self.dist_matrix_squared is None or self.Y_train is None or self.train_indices is None:
@@ -33,12 +31,11 @@ class HarmonicFunction:
 
         self.X = X
         self.Y_train = Y_train
-        self.train_indices = train_indices
         
 
 
 
-    def predict(self, dist_matrix_squared: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def predict(self, dist_matrix_squared: np.ndarray, train_indices:np.ndarray, test_indices: np.ndarray) -> np.ndarray:
         """
         Args:
             test_indices (np.ndarray): Indices of test data points.
@@ -49,13 +46,13 @@ class HarmonicFunction:
         
         transition_matrix = transition_matrix_gaussian(
             dist_matrix_squared,
-            label=self.train_indices,
+            label=train_indices,
             sigma=self.sigma,
             nn=self.nn,
             row_norm=False
                     )
 
-        P_UL = transition_matrix[np.ix_(test_indices, self.train_indices)]
+        P_UL = transition_matrix[np.ix_(test_indices, train_indices)]
         P_UU = transition_matrix[np.ix_(test_indices, test_indices)]
     
         u = len(test_indices)

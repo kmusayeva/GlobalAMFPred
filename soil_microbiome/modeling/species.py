@@ -62,7 +62,7 @@ class Species:
             sys.exit(1)
         if self.env_vars is None:
             self.env_vars = data.columns.tolist()[:self.x_dim]
-        return data[self.env_vars], data.iloc[:, (self.x_dim+1):]
+        return data[self.env_vars], data.iloc[:, self.x_dim:]
 
     def label_info(self) -> Dict[str, float]:
         """Calculate label distribution, density, and average class imbalance."""

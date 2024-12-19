@@ -34,7 +34,7 @@ class MLClassification:
 
         stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
 
-        self.train_valid_idx, self.test_idx = next(stratifier.split(species.X, species.Y))
+        self.train_valid_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
 
         self.X_train_valid, self.Y_train_valid = self.X[self.train_valid_idx], self.Y[self.train_valid_idx]
 

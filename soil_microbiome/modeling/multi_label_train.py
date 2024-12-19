@@ -49,7 +49,7 @@ class MLTrain(MLClassification):
 
                 print(f">>>>Done: {func_name}")
 
-                file_name = os.path.join(global_vars['model_dir'], f"{func_name}.pkl")
+                file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
 
                 print(f"Saving {func_name} to a file.")
 
@@ -96,7 +96,7 @@ class MLTrain(MLClassification):
 
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=2, timeout=600)
+        study.optimize(objective, n_trials=50, timeout=600)
 
         best_trial = study.best_trial
 
@@ -130,9 +130,9 @@ class MLTrain(MLClassification):
             
             model = HarmonicFunction(sigma=sigma, nn=nn)
             
-            model.fit(self.X_train_valid, self.Y_train, self.train_idx)
+            model.fit(self.X_train_valid, self.Y_train)
             
-            soft_labels = model.predict(X_train_valid_dist_squared, self.valid_idx)
+            soft_labels = model.predict(X_train_valid_dist_squared, self.train_idx, self.valid_idx)
             
             #soft_labels = hf(X_train_valid_dist_squared, self.Y_train, self.train_idx, self.valid_idx, nn=nn, sigma=sigma)
 
@@ -157,7 +157,7 @@ class MLTrain(MLClassification):
         sigma = best_trial.params["sigma"]
 
         model = HarmonicFunction(sigma=sigma, nn=nn)
-        model.fit(self.X_train_valid, self.Y_train_valid, self.train_valid_idx)
+        model.fit(self.X_train_valid, self.Y_train_valid)
 
         return model
 
@@ -268,11 +268,9 @@ class MLTrain(MLClassification):
 
 
 
-    def knn_train(self) -> np.ndarray:
+    def knn_train(self):
         """
-        Predict using k-nearest neighbour.
-        We choose very small number of neighbour between 1 and 3.
-        @return predictions
+        Train k-nearest neighbour.
         """
         """ Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
         preds = np.zeros_like(Y_test)
@@ -297,20 +295,20 @@ class MLTrain(MLClassification):
                     preds[:, s] = knn.predict(self.X_valid)
 
             f1 = f1_score(self.Y_valid, preds, average="micro")
-            
+
             return f1
 
 
         sampler = optuna.samplers.GridSampler(nn_grid)
 
         study = optuna.create_study(direction="maximize", sampler=sampler)
+        
         study.optimize(objective, n_trials=len(nn_grid["nn"]))
         
         best_trial = study.best_trial
 
         for key, value in best_trial.params.items():
             print("    {}: {}".format(key, value))
-
 
         nn = best_trial.params["nn"]
 
