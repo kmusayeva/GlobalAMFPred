@@ -15,7 +15,8 @@ from typing import List, Tuple, Dict, Optional
 
 class Species:
     def __init__(self, 
-                tax_level: str, 
+                file_name: str,
+                tax_level="species": str, 
                 x_dim: int, 
                 env_vars: Optional[List[str]] = None,
                 species_pattern: Optional[List[str]] = None,
@@ -25,6 +26,7 @@ class Species:
         Initialize the Species object with X as environmental variables, Y abundancy matrix,
         Yb absence/presence matrix, Y_top top most frequent species.
         Calculate label ditrbution, class imbalance information.
+        @param file_name: file name to read the data from
         @param tax_level: taxonomic level: order, family, genus, or species
         @param x_dim: total number of variables in input data
         @param env_vars: list of selected environmental/input variables
@@ -35,7 +37,7 @@ class Species:
         self.env_vars = env_vars
         self.x_dim = x_dim
         self.is_binary = False
-        self.X, self.Y = self.__read_data()
+        self.X, self.Y = self.__read_data(file_name)
         self.Y = self.Y.loc[:, (self.Y != 0).any(axis=0)]
         if species is not None:
             self.Y = self.Y[species]
@@ -48,24 +50,25 @@ class Species:
         self.Y_top = self.Yb
         self.label_distri = self.label_info()
 
-    def __read_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def __read_data(self, file_name) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Read data from the specified file and return environmental variables and species data.
-        @return: input, output matrices
+        @return: input, output data frames 
         """
-        data_dir = 'data_dir'
-        file_name = os.path.join(global_vars[data_dir], f'{self.level}.xlsx')
+        data_path = os.path.join(global_vars['data_dir'], file_name)
         try:
-            data = read_file(file_name)
+            data = read_file(data_path)
         except ValueError as err:
-            print(f"Error in reading file {file_name}: {err}")
+            print(f"Error in reading file {data_path}: {err}")
             sys.exit(1)
         if self.env_vars is None:
             self.env_vars = data.columns.tolist()[:self.x_dim]
         return data[self.env_vars], data.iloc[:, self.x_dim:]
 
     def label_info(self) -> Dict[str, float]:
-        """Calculate label distribution, density, and average class imbalance."""
+        """
+        Calculate label distribution, density, and average class imbalance.
+        """
         n, c = self.Y_top.shape
         col_sum = np.sum(self.Y_top.to_numpy(), axis=0)
         row_sum = np.sum(self.Y_top.to_numpy())
