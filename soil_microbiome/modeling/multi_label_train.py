@@ -268,37 +268,29 @@ class MLTrain(MLClassification):
         """
         Train k-nearest neighbour.
         """
-        """ Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        normalized_X = StandardScaler().fit_transform(self.species.X)
-        for s in range(Y_train.shape[1]):
-            knn = KNeighborsClassifier(n_neighbors=1).fit(normalized_X[train_indices], Y_train[:, s])
-            preds[:, s] = knn.predict(normalized_X[test_indices])
-        """
 
-        normalized_X = StandardScaler().fit_transform(self.X_train_valid)
+        normalized_X = StandardScaler().fit_transform(self.X_train)
 
-        preds = np.zeros_like(self.Y_train_valid[self.valid_idx])
+        preds = np.zeros_like(self.Y_test)
 
+        # set the range for the number of nearest neighbours
         nn_grid = {"nn": list(range(1, 15))}
 
         def objective(trial):
             
             nn = trial.suggest_categorical("nn", nn_grid["nn"])
 
-            for s in range(self.Y_train_valid.shape[1]):
+            for s in range(self.Y_train.shape[1]):
                     knn = KNeighborsClassifier(n_neighbors=nn).fit(self.X_train, self.Y_train[:, s])
-                    preds[:, s] = knn.predict(self.X_valid)
+                    preds[:, s] = knn.predict(self.X_test)
 
-            f1 = f1_score(self.Y_valid, preds, average="micro")
+            f1 = f1_score(self.Y_test, preds, average="micro")
 
             return f1
 
 
         sampler = optuna.samplers.GridSampler(nn_grid)
-
         study = optuna.create_study(direction="maximize", sampler=sampler)
-        
         study.optimize(objective, n_trials=len(nn_grid["nn"]))
         
         best_trial = study.best_trial
@@ -312,7 +304,7 @@ class MLTrain(MLClassification):
 
         for s in range(self.Y_train_valid.shape[1]):
                 
-                model = KNeighborsClassifier(n_neighbors=nn).fit(self.X_train_valid, self.Y_train_valid[:, s])
+                model = KNeighborsClassifier(n_neighbors=nn).fit(self.X, self.Y[:, s])
 
                 models[s] = model
 
