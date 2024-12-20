@@ -53,12 +53,15 @@ class MLEvaluate(MLClassification):
             if method in ["ecc", "lp", "xgb", "mlknn"]:
                 preds = self.multi_label_predict(model)
                 if method == "ecc": preds = np.rint(preds)
-
+                
             elif method in ["knn", "rf", "gb", "svc"]:
                 preds = self.binary_relevance_predict(model)
 
             elif method == "hf":
                 preds = self.hf_predict(model)
+
+
+            preds = preds[:, :self.num_species]
 
             for metric, scoring_func, kwargs in self.scores:
                 self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
@@ -85,7 +88,7 @@ class MLEvaluate(MLClassification):
        
         preds = np.zeros((len(self.X), self.num_species))
 
-        for label in range(len(models)):
+        for label in range(self.num_species):
             preds[:, label] = models[label].predict(self.X)
 
         return preds
