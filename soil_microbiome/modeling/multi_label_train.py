@@ -53,7 +53,7 @@ class MLTrain(MLClassification):
 
                 print(f"Saving {func_name} to a file.")
 
-                with open(file_name, "wb") as file:
+                with open(file_name, "wb") as file:tonality
                     pickle.dump(model, file)
 
                 print(f"Model saved to {file_name}")
@@ -87,9 +87,9 @@ class MLTrain(MLClassification):
 
             model.fit(self.X_train, self.Y_train)
 
-            soft_labels = model.predict(self.X_valid)
+            soft_labels = model.predict(self.X_test)
 
-            preds = cmn(soft_labels, self.Y_train)    
+            preds = basic(soft_labels, self.Y_train)    
 
             f1 = f1_score(self.Y_valid, preds, average="micro")
             return f1
@@ -110,7 +110,7 @@ class MLTrain(MLClassification):
         
         model = EnsembleClassifierChains(base_estimator=base_model, n_chains=2, random_state=23)
         
-        model.fit(self.X_train_valid, self.Y_train_valid)
+        model.fit(self.X_train, self.Y_train)
 
         return model
 
@@ -120,7 +120,7 @@ class MLTrain(MLClassification):
         Train harmonic function.
         """
         
-        X_train_valid_dist_squared = dist_matrix(self.X_train_valid) ** 2 ### training/validation data
+        X_dist_squared = dist_matrix(self.X_train) ** 2 ### training/validation data
 
         def objective(trial):
             
@@ -130,14 +130,14 @@ class MLTrain(MLClassification):
             
             model = HarmonicFunction(sigma=sigma, nn=nn)
             
-            model.fit(self.X_train_valid, self.Y_train)
+            model.fit(self.X, self.Y_train)
             
-            soft_labels = model.predict(X_train_valid_dist_squared, self.train_idx, self.valid_idx)
+            soft_labels = model.predict(X_dist_squared, self.train_idx, self.test_idx)
             
-            #soft_labels = hf(X_train_valid_dist_squared, self.Y_train, self.train_idx, self.valid_idx, nn=nn, sigma=sigma)
-
             preds = basic(soft_labels, self.Y_train)    
-            f1 = f1_score(self.Y_valid, preds, average="micro")
+
+            f1 = f1_score(self.Y_test, preds, average="micro")
+
             return f1
 
         study = optuna.create_study(direction="maximize")
@@ -154,10 +154,12 @@ class MLTrain(MLClassification):
             print("    {}: {}".format(key, value))
 
         nn = best_trial.params["nn"]
+        
         sigma = best_trial.params["sigma"]
 
         model = HarmonicFunction(sigma=sigma, nn=nn)
-        model.fit(self.X_train_valid, self.Y_train_valid)
+        
+        model.fit(self.X, self.Y)
 
         return model
 
@@ -187,22 +189,25 @@ class MLTrain(MLClassification):
         @param test_indices
         @return predictions
         """
-        normalized_X = StandardScaler().fit_transform(self.X_train_valid)
 
         def objective(trial):
-            s = trial.suggest_float("s", 0.1, 0.9, log=True)  
+            s = trial.suggest_float("s", 0.1, 0.9, log=True) 
+
             nn = trial.suggest_categorical("nn", [1, 3, 5, 7, 10])
-            mlknn = MLkNN(k=nn, s=s)
-            mlknn.fit(normalized_X[self.train_idx], self.Y_train)
-            preds = mlknn.predict(normalized_X[self.valid_idx])
-            f1 = f1_score(self.Y_valid, preds, average="micro")
+
+            model = MLkNN(k=nn, s=s)
+            
+            model.fit(self.X_train, self.Y_train)
+
+            preds = mlknn.predict(self.X_test)
+
+            f1 = f1_score(self.Y_test, preds, average="micro")
+            
             return f1
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=100, timeout=600)
         
-        print("Number of finished trials: ", len(study.trials))
-        print("Best trial:")
         best_trial = study.best_trial
 
         print("  Value: {}".format(best_trial.value))
@@ -211,11 +216,10 @@ class MLTrain(MLClassification):
         for key, value in best_trial.params.items():
             print("    {}: {}".format(key, value))
 
-        normalized_X = StandardScaler().fit_transform(self.X)
 
         model = MLkNN(k=best_trial.params["nn"], s=best_trial.params["s"])
 
-        model.fit(normalized_X[self.train_valid_idx], self.Y_train_valid)
+        model.fit(self.X, self.Y)
 
         return model
 
@@ -227,7 +231,7 @@ class MLTrain(MLClassification):
         @return predictions
         """
 
-        X_train_valid_dist_squared = dist_matrix(self.X_train_valid) ** 2
+        X_dist_squared = dist_matrix(self.X) ** 2
 
         def objective(trial):
             
@@ -235,11 +239,11 @@ class MLTrain(MLClassification):
             
             reg = trial.suggest_float("reg", 0.1, 0.99, log=True) 
             
-            soft_labels = cm(X_train_valid_dist_squared, self.Y_train_valid, self.train_idx, sigma=sigma, reg=reg)
+            soft_labels = cm(X_dist_squared, self.Y, self.train_idx, sigma=sigma, reg=reg)
             
             preds = cmn(soft_labels, self.Y_train)   
 
-            f1 = f1_score(self.Y_valid, preds, average="micro")
+            f1 = f1_score(self.Y_test, preds, average="micro")
 
             return f1
 
@@ -254,17 +258,9 @@ class MLTrain(MLClassification):
         reg = best_trial.params["reg"]
         sigma = best_trial.params["sigma"]
 
-        ### evaluation
-        X_test_dist_squared = dist_matrix(self.X) ** 2 
-        soft_labels = cm(X_test_dist_squared, self.Y, self.train_valid_idx, sigma=sigma, reg=reg)
+        ### update
 
-        preds = cmn(soft_labels, self.Y_train_valid) 
-
-        for metric, scoring_func, kwargs in self.scores:
-            print(round(scoring_func(self.Y_test, preds, **kwargs), 3))
-
-
-        return preds
+        return 1
 
 
 
