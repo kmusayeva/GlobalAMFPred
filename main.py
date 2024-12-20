@@ -14,7 +14,7 @@ all_input_variables = ['anthropogenic', 'aquatic', 'cropland', 'desert', 'forest
 # we choose all input variables as environmental variables
 env_vars = all_input_variables
 
-species = Species(file_name="species_train.xlsx", tax_level=tax_level, x_dim=len(all_input_variables), env_vars=env_vars)
+species = Species(file_name="species_train.xlsx", x_dim=len(all_input_variables), tax_level=tax_level, env_vars=env_vars)
 
 # get k top frequent species
 k = 20
@@ -23,6 +23,9 @@ species.get_top_species(k)
 
 # print species info
 species.print_info()
+
+ml = MLClassification(species)
+
 
 
 #print(global_vars["model_dir"])

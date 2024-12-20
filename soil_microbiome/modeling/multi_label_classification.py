@@ -30,24 +30,17 @@ class MLClassification:
         
         self.Y = species.Y_top.to_numpy()
 
-        ### create three subsets of data for training, validation and testing, with proportions 60%/20%/20%.
+        # split data into train/test sets
 
-        stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.2, 0.8])
+        stratifier = IterativeStratification(n_splits=2, order=5, sample_distribution_per_fold=[0.2, 0.8])
 
-        self.train_valid_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
+        self.train_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
 
-        self.X_train_valid, self.Y_train_valid = self.X[self.train_valid_idx], self.Y[self.train_valid_idx]
-
-        stratifier = IterativeStratification(n_splits=2, order=1, sample_distribution_per_fold=[0.25, 0.75])
-
-        self.train_idx, self.valid_idx = next(stratifier.split(self.X_train_valid, self.Y_train_valid))
-
-        self.Y_train, self.Y_valid, self.Y_test = self.Y_train_valid[self.train_idx], self.Y_train_valid[self.valid_idx], self.Y[self.test_idx]
-        self.X_train, self.X_valid, self.X_test = self.X_train_valid[self.train_idx], self.X_train_valid[self.valid_idx], self.X[self.test_idx]
+        self.X_train, self.X_test, self.Y_train, self.Y_test = self.X[self.train_idx], self.X[self.test_idx], self.Y[self.train_idx], self.Y[self.test_idx]
 
         self.species_names = species.Y_top.columns.tolist()
 
-        ### define evaluation metrics
+        # define evaluation metrics
 
         self.scores = [
             #("F1", f1_score, {"average": "samples"}),

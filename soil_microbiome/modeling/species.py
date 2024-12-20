@@ -16,8 +16,8 @@ from typing import List, Tuple, Dict, Optional
 class Species:
     def __init__(self, 
                 file_name: str,
-                tax_level="species": str, 
                 x_dim: int, 
+                tax_level: Optional[str] = "species",                 
                 env_vars: Optional[List[str]] = None,
                 species_pattern: Optional[List[str]] = None,
                 species: Optional[List[str]] = None) -> None:
@@ -27,8 +27,8 @@ class Species:
         Yb absence/presence matrix, Y_top top most frequent species.
         Calculate label ditrbution, class imbalance information.
         @param file_name: file name to read the data from
-        @param tax_level: taxonomic level: order, family, genus, or species
         @param x_dim: total number of variables in input data
+        @param tax_level: taxonomic level: order, family, genus, or species
         @param env_vars: list of selected environmental/input variables
         @param species_pattern: select species based on their names, such as "glo"
         @param species: list of species such as ["Glomus", "Rhizophagus"]
