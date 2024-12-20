@@ -47,52 +47,46 @@ class MLEvaluate(MLClassification):
             file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
 
             model = load(file_name)
-            
-            func_name = f"{method}_predict"
-            
-            if hasattr(self, func_name):
-                func = getattr(self, func_name)
-                
-                preds = func(model)
 
-                for metric, scoring_func, kwargs in self.scores:
-                    self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
-            else:
-                raise AttributeError(f"Method {func_name} is not defined in the class.")
+            print(f">>>Evaluating model: {self.methods_long[method]}...")
+
+            if method in ["ecc", "lp", "xgb", "mlknn"]:
+                preds = self.multi_label_predict(model)
+                if method == "ecc": preds = np.rint(preds)
+
+            elif method in ["knn", "rf", "gb", "svc"]:
+                preds = self.binary_relevance_predict(model)
+
+            elif method == "hf":
+                preds = self.hf_predict(model)
+
+            for metric, scoring_func, kwargs in self.scores:
+                self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
+
         
         print(f">>>Results: \n{self.result.to_string()}")
 
 
 
-    def ecc_predict(self, model) -> np.ndarray:
+    def multi_label_predict(self, model) -> np.ndarray:
         """
-        ensembles of classifer chains with random forest as base model
+        predict with ecc, lp, xgb
         """
 
-        soft_labels = model.predict(self.X)
-
-        preds = np.where(soft_labels > 0.5, 1, 0)    
+        preds = model.predict(self.X)
 
         return preds
 
 
-    def lp_predict(self, model) -> np.ndarray:
+    def binary_relevance_predict(self, models) -> np.ndarray:
         """
-        Prediction using label powerset with random forest base model.
+        predict with knn, rf, gb, svc
         """
+       
+        preds = np.zeros((len(self.X), self.num_species))
 
-        preds = model.predict(self.X)
-        
-        return preds
-
-
-    def mlknn_predict(self, model) -> np.ndarray:
-        """
-        Prediction using ml-knn.
-        @return predictions
-        """
-
-        preds = model.predict(self.X)
+        for label in range(len(models)):
+            preds[:, label] = models[label].predict(self.X)
 
         return preds
 
@@ -101,8 +95,6 @@ class MLEvaluate(MLClassification):
         """
         Predict with harmonic function.
         """
-        
-        #model = load(os.path.join(global_vars['model_dir'], "hf.pkl"))
         
         X = np.concatenate((model.X, self.X))
 
@@ -118,10 +110,9 @@ class MLEvaluate(MLClassification):
 
         soft_labels = model.predict(dist_matrix_squared, train_indices, test_indices)
 
-        preds = cmn(soft_labels, model.Y_train)    
+        preds = basic(soft_labels, model.Y_train)    
 
         return preds
-
 
 
     def cm_predict(self) -> np.ndarray:
@@ -129,33 +120,6 @@ class MLEvaluate(MLClassification):
         Prediction using consistency method.
         @return predictions
         """
-
-        X_train_valid_dist_squared = dist_matrix(self.X_train_valid) ** 2
-
-        def objective(trial):
-            
-            sigma = trial.suggest_float("sigma", 0.3, 2.0, log=True)  
-            
-            reg = trial.suggest_float("reg", 0.1, 0.99, log=True) 
-            
-            soft_labels = cm(X_train_valid_dist_squared, self.Y_train_valid, self.train_idx, sigma=sigma, reg=reg)
-            
-            preds = cmn(soft_labels, self.Y_train)   
-
-            f1 = f1_score(self.Y_valid, preds, average="micro")
-
-            return f1
-
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
-        
-        best_trial = study.best_trial
-
-        for key, value in best_trial.params.items():
-            print("    {}: {}".format(key, value))
-
-        reg = best_trial.params["reg"]
-        sigma = best_trial.params["sigma"]
 
         ### evaluation
         X_test_dist_squared = dist_matrix(self.X) ** 2 
@@ -169,58 +133,3 @@ class MLEvaluate(MLClassification):
 
         return preds
 
-
-
-    def knn_predict(self, models) -> np.ndarray:
-
-        preds = np.zeros((len(self.X), self.num_species))
-
-        for label in range(len(models)):
-            preds[:, label] = models[label].predict(self.X)
-
-        return preds
-
-
-
-    def rf_predict(self, models) -> np.ndarray:
-        """
-        Predict using random forest.
-        @return predictions
-        """
-
-        preds = np.zeros((len(self.X), self.num_species))
-
-        for label in range(len(models)):
-            preds[:, label] = models[label].predict(self.X)
-
-        return preds
-
-
-    def gb_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
-        """
-        Predict using gradient boosting.
-        @param train_indices
-        @param test_indices
-        @return predictions
-        """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        for s in range(Y_train.shape[1]):
-            gb = GradientBoostingClassifier(random_state=22).fit(self.species.X[train_indices], Y_train[:, s])
-            preds[:, s] = gb.predict(self.species.X[test_indices])
-        return preds
-
-
-    def svc_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
-        """
-        Predict using support vector machine.
-        @param train_indices
-        @param test_indices
-        @return predictions
-        """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        for s in range(Y_train.shape[1]):
-            svcm = SVC(kernel='rbf', C=1000, gamma=0.001).fit(self.species.X[train_indices], Y_train[:, s])
-            preds[:, s] = svcm.predict(self.species.X[test_indices])
-        return preds

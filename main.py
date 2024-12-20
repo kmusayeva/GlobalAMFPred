@@ -18,10 +18,14 @@ data_split_train_test(species)
 
 
 num_species = 20
+
 """
-species_train = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
+species_train = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']), \
+                        env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
 
 MLTrain(species_train).train()
+
+
 """
 
 species_test = Species(file_name="species_test.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
@@ -33,4 +37,3 @@ MLEvaluate(species_test).evaluate()
 #MLEvaluate(species).evaluate()
 
 #MLEvaluate(species).hf_predict()
-

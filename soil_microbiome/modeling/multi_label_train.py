@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.multioutput import ClassifierChain
 from skmultilearn.adapt import MLkNN
+import xgboost as xgb
 from skmultilearn.problem_transform import LabelPowerset
 import pickle
 import optuna
@@ -37,18 +38,21 @@ class MLTrain(MLClassification):
 
         self.train_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
 
-        self.X_train, self.X_test, self.Y_train, self.Y_test = self.X[self.train_idx], self.X[self.test_idx], self.Y[self.train_idx], self.Y[self.test_idx]
+        self.X_train, self.X_test = self.X[self.train_idx], self.X[self.test_idx]
 
+        self.Y_train, self.Y_test = self.Y[self.train_idx], self.Y[self.test_idx]
 
 
     def train(self) -> None:
         """
-        Train the models.
+        Model training.
         """
 
         for method in self.methods:
 
             func_name = f"{method}_train"
+
+            print("Training model: ", method)
 
             if hasattr(self, func_name):
 
@@ -73,9 +77,8 @@ class MLTrain(MLClassification):
 
 
     def ecc_train(self):
-
         """
-        Train ensembles of classifier chains with random forest as base model.
+        Ensembles of classifier chains with random forest as base model.
         """
 
         def objective(trial):
@@ -98,7 +101,7 @@ class MLTrain(MLClassification):
 
             soft_labels = model.predict(self.X_test)
 
-            preds = basic(soft_labels, self.Y_train)    
+            preds = np.rint(soft_labels)
 
             f1 = f1_score(self.Y_test, preds, average="micro")
             return f1
@@ -220,15 +223,6 @@ class MLTrain(MLClassification):
 
         model.fit(self.X, self.Y)
 
-        """
-        base_model = RandomForestClassifier(n_estimators=20, random_state=49)
-        lp = LabelPowerset(classifier=base_model, require_dense=[False, True])
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        lp.fit(self.species.X[train_indices], Y_train)
-        preds = lp.predict(self.species.X[test_indices])
-        # print(soft_labels)
-        # preds = lco(soft_labels, Y_test)
-        """
         return model
 
 
@@ -270,46 +264,6 @@ class MLTrain(MLClassification):
         model.fit(self.X, self.Y)
 
         return model
-
-
-
-    def cm_train(self):
-        """
-        Prediction using consistency method.
-        @return predictions
-        """
-
-        X_dist_squared = dist_matrix(self.X) ** 2
-
-        def objective(trial):
-            
-            sigma = trial.suggest_float("sigma", 0.3, 2.0, log=True)  
-            
-            reg = trial.suggest_float("reg", 0.1, 0.99, log=True) 
-            
-            soft_labels = cm(X_dist_squared, self.Y, self.train_idx, sigma=sigma, reg=reg)
-            
-            preds = cmn(soft_labels, self.Y_train)   
-
-            f1 = f1_score(self.Y_test, preds, average="micro")
-
-            return f1
-
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
-        
-        best_trial = study.best_trial
-
-        for key, value in best_trial.params.items():
-            print("    {}: {}".format(key, value))
-
-        reg = best_trial.params["reg"]
-        sigma = best_trial.params["sigma"]
-
-        ### update
-
-        return 1
-
 
 
     def knn_train(self):
@@ -359,10 +313,10 @@ class MLTrain(MLClassification):
         return models
 
 
-
+    
     def rf_train(self):
         """
-        Train using random forest.
+        Random forest.
         """
        
         preds = np.zeros_like(self.Y_test)
@@ -406,35 +360,194 @@ class MLTrain(MLClassification):
         return models
 
 
-    def gb_train(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def gb_train(self):
         """
-        Predict using gradient boosting.
-        @param train_indices
-        @param test_indices
+        Gradient boosting.
+        """
+
+        preds = np.zeros_like(self.Y_test)
+
+        def objective(trial):
+
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 50, 500),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 1.0, log=True),
+                "max_depth": trial.suggest_int("max_depth", 2, 20),
+                "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
+                "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
+                "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
+                "subsample": trial.suggest_float("subsample", 0.5, 1.0)
+            }    
+
+            for label in range(self.Y_train.shape[1]):
+                gb = GradientBoostingClassifier(**params, random_state=42)
+                model = gb.fit(self.X_train, self.Y_train[:, label])
+                preds[:, label] = model.predict(self.X_test)
+
+            f1 = f1_score(self.Y_test, preds, average="micro")
+            return f1
+
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=50)
+
+        best_trial = study.best_trial
+        print("  Value: {}".format(best_trial.value))
+        print("  Params: ")
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
+
+        models = {}
+
+        for label in range(self.Y.shape[1]):
+            gb = GradientBoostingClassifier(**best_trial.params, random_state=42)
+            models[label] = gb.fit(self.X, self.Y[:, label])
+
+        return models           
+
+
+
+    def xgb_train(self):
+        dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
+        dvalid = xgb.DMatrix(self.X_test, label=self.Y_test)
+
+        def objective_fungi(trial):
+
+            param = {
+                "verbosity": 0,
+                "objective": "binary:logistic",
+                # use exact for small dataset.
+                "tree_method": "hist", ### do not forget to change it from exact to hist if you use categorical variables
+                # defines booster, gblinear for linear functions.
+                "booster": trial.suggest_categorical("booster", ["gbtree", "dart"]),
+                # L2 regularization weight.
+                "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+                # L1 regularization weight.
+                "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+                # sampling ratio for training data.
+                "subsample": trial.suggest_float("subsample", 0.2, 1.0),
+                # sampling according to each tree.
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
+            }
+
+            if param["booster"] in ["gbtree", "dart"]:
+                param["max_depth"] = trial.suggest_int("max_depth", 3, 9, step=2)
+                param["min_child_weight"] = trial.suggest_int("min_child_weight", 2, 10)
+                param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
+                param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
+                param["grow_policy"] = trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"])
+
+            if param["booster"] == "dart":
+                param["sample_type"] = trial.suggest_categorical("sample_type", ["uniform", "weighted"])
+                param["normalize_type"] = trial.suggest_categorical("normalize_type", ["tree", "forest"])
+                param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
+                param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
+
+
+            model = xgb.train(param, dtrain)
+            soft_labels = model.predict(dvalid)
+            preds = np.rint(soft_labels)
+            f1 = f1_score(self.Y_test, preds, average="macro")
+            return f1
+
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective_fungi, n_trials=100, timeout=600)
+                
+        best_trial = study.best_trial
+        print("  Value: {}".format(best_trial.value))
+        print("  Params: ")
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
+        model = xgb.XGBClassifier(**best_trial.params)
+        model.fit(self.X, self.Y)
+
+        return model
+
+
+    def svc_train(self):
+        """
+        Support vector machine.
+        """
+
+        preds = np.zeros_like(self.Y_test)
+        
+        def objective(trial):
+
+            params = {
+                "C": trial.suggest_float("C", 1e-3, 1e2),
+                "gamma": trial.suggest_float("gamma", 1e-4, 1e1, log=True) 
+                }
+
+            for label in range(self.Y_train.shape[1]):
+                svcm = SVC(**params, kernel="rbf", random_state=42).fit(self.X_train, self.Y_train[:, label])
+                preds[:, label] = svcm.predict(self.X_test)
+
+
+            f1 = f1_score(self.Y_test, preds, average="micro")
+            return f1
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=100, timeout=600)
+
+        best_trial = study.best_trial
+
+        print("  Value: {}".format(best_trial.value))
+
+        print("  Params: ")
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
+
+        models = {}
+
+        for label in range(self.Y.shape[1]):
+            svcm = SVC(**best_trial.params, kernel="rbf", random_state=42).fit(self.X, self.Y[:, label])
+            models[label] = svcm
+
+
+        return models
+
+
+
+
+    def cm_train(self):
+        """
+        Prediction using consistency method.
         @return predictions
         """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        for s in range(Y_train.shape[1]):
-            gb = GradientBoostingClassifier(random_state=22).fit(self.species.X[train_indices], Y_train[:, s])
-            preds[:, s] = gb.predict(self.species.X[test_indices])
 
+        X_dist_squared = dist_matrix(self.X) ** 2
 
-
+        def objective(trial):
             
-        return preds
+            sigma = trial.suggest_float("sigma", 0.3, 2.0, log=True)  
+            
+            reg = trial.suggest_float("reg", 0.1, 0.99, log=True) 
+            
+            soft_labels = cm(X_dist_squared, self.Y, self.train_idx, sigma=sigma, reg=reg)
+            
+            preds = cmn(soft_labels, self.Y_train)   
+
+            f1 = f1_score(self.Y_test, preds, average="micro")
+
+            return f1
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=100, timeout=600)
+        
+        best_trial = study.best_trial
+
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
+        reg = best_trial.params["reg"]
+        sigma = best_trial.params["sigma"]
+
+        ### update
+
+        return 1
 
 
-    def svc_train(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
-        """
-        Predict using support vector machine.
-        @param train_indices
-        @param test_indices
-        @return predictions
-        """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        for s in range(Y_train.shape[1]):
-            svcm = SVC(kernel='rbf', C=1000, gamma=0.001).fit(self.species.X[train_indices], Y_train[:, s])
-            preds[:, s] = svcm.predict(self.species.X[test_indices])
-        return preds

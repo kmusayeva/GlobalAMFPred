@@ -47,6 +47,8 @@ class MLClassification:
 
         ### specify which models are used
 
-        #self.methods = ["lp", "knn", "hf", "rf", "gb", "svc", "ecc", "mlknn"]
-        
-        self.methods = ["knn", "mlknn", "hf", "rf", "ecc", "lp"]
+        self.methods_long = {"knn":"k-nearest neighbors", "mlknn": "multi-label knn", "hf":"harmonic function", 
+                            "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting", 
+                            "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains", "lp":"label powerset"}
+
+        self.methods = ["knn", "mlknn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp"]
