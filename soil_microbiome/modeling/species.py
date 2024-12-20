@@ -17,8 +17,9 @@ class Species:
     def __init__(self, 
                 file_name: str,
                 x_dim: int, 
-                tax_level: Optional[str] = "species",                 
                 env_vars: Optional[List[str]] = None,
+                tax_level: Optional[str] = "species",  
+                num_species_interest: Optional[int] = None,                 
                 species_pattern: Optional[List[str]] = None,
                 species: Optional[List[str]] = None) -> None:
 
@@ -29,6 +30,7 @@ class Species:
         @param file_name: file name to read the data from
         @param x_dim: total number of variables in input data
         @param tax_level: taxonomic level: order, family, genus, or species
+        @param num_species_interest: number of species of interest
         @param env_vars: list of selected environmental/input variables
         @param species_pattern: select species based on their names, such as "glo"
         @param species: list of species such as ["Glomus", "Rhizophagus"]
@@ -48,7 +50,13 @@ class Species:
         self.freq = ((self.Yb.sum().sort_values() * 100 / len(self.Y)).round(2))[::-1]
         self.Yb_sorted = self.Yb.sort_index(axis=1)
         self.Y_top = self.Yb
-        self.label_distri = self.label_info()
+        self.num_species_interest = None
+        
+        if num_species_interest is not None: 
+            self.get_top_species(num_species_interest)
+        else:
+             self.label_distri = self.label_info()
+
 
     def __read_data(self, file_name) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -112,6 +120,7 @@ class Species:
             raise ValueError('Start and end values are not correct.')
         self.freq = self.freq[exclude_first_n:num_top]
         cols = self.freq.index.tolist()
+        self.num_species_interest = num_top
         self.Y_top = self.Yb[cols]
         self.label_distri = self.label_info()
 

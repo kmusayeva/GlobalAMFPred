@@ -30,24 +30,18 @@ class MLClassification:
         
         self.Y = species.Y_top.to_numpy()
 
-        # split data into train/test sets
-
-        stratifier = IterativeStratification(n_splits=2, order=5, sample_distribution_per_fold=[0.2, 0.8])
-
-        self.train_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
-
-        self.X_train, self.X_test, self.Y_train, self.Y_test = self.X[self.train_idx], self.X[self.test_idx], self.Y[self.train_idx], self.Y[self.test_idx]
-
         self.species_names = species.Y_top.columns.tolist()
 
-        # define evaluation metrics
+        self.num_species = species.num_species_interest
 
+        # define evaluation metrics
         self.scores = [
             #("F1", f1_score, {"average": "samples"}),
             ("Macro-F1", f1_score, {"average": "macro"}),
             ("Micro-F1", f1_score, {"average": "micro"}),
-            ("HL", hamming_loss, {}),
-            ("SA", accuracy_score, {})]
+            ("SA", accuracy_score, {}),                   
+            ("HL", hamming_loss, {})
+            ]
 
         self.score_names = [x[0] for x in self.scores]
 
@@ -55,5 +49,4 @@ class MLClassification:
 
         #self.methods = ["lp", "knn", "hf", "rf", "gb", "svc", "ecc", "mlknn"]
         
-        self.methods = ["hf", "knn", "ecc"]
-        
+        self.methods = ["knn", "mlknn", "hf", "rf", "ecc", "lp"]

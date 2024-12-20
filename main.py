@@ -1,34 +1,32 @@
 from mlp.multi_label_propagation import *
 from soil_microbiome.modeling import *
-from skmultilearn.model_selection import iterative_train_test_split
-from skmultilearn.model_selection import IterativeStratification
 
 # taxonomic level is species
 tax_level = 'species'
 
-# prepare environmental variables
-all_input_variables = ['anthropogenic', 'aquatic', 'cropland', 'desert', 'forest', 'grassland',
-        'shrubland', 'tundra', 'wetland', 'woodland', 
-       'longitude', 'latitude','MAP', 'MAT', 'pH']
-
 # we choose all input variables as environmental variables
-env_vars = all_input_variables
+env_vars = global_vars['input_variables']
 
-species = Species(file_name="species_train.xlsx", x_dim=len(all_input_variables), tax_level=tax_level, env_vars=env_vars)
-
-# get k top frequent species
-k = 20
-
-species.get_top_species(k)
+"""
+k = 40 # number of species of interest
+species = Species(file_name="species.xlsx", x_dim=len(all_input_variables), env_vars=env_vars, tax_level=tax_level)
+data_split_train_test(species)
+"""
 
 # print species info
-species.print_info()
-
-ml = MLClassification(species)
+#species.print_info()
 
 
+num_species = 20
+"""
+species_train = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
 
-#print(global_vars["model_dir"])
+MLTrain(species_train).train()
+"""
+
+species_test = Species(file_name="species_test.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
+
+MLEvaluate(species_test).evaluate()
 
 #MLTrain(species).train()
 

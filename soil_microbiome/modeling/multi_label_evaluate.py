@@ -56,7 +56,7 @@ class MLEvaluate(MLClassification):
                 preds = func(model)
 
                 for metric, scoring_func, kwargs in self.scores:
-                    self.result.loc[metric, method] = round(scoring_func(self.Y_test, preds, **kwargs), 3)
+                    self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
             else:
                 raise AttributeError(f"Method {func_name} is not defined in the class.")
         
@@ -67,90 +67,48 @@ class MLEvaluate(MLClassification):
     def ecc_predict(self, model) -> np.ndarray:
         """
         ensembles of classifer chains with random forest as base model
-
-        @return predictions
         """
-        soft_labels = model.predict(self.X_test)
+
+        soft_labels = model.predict(self.X)
+
         preds = np.where(soft_labels > 0.5, 1, 0)    
+
         return preds
 
 
-    def lp_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def lp_predict(self, model) -> np.ndarray:
         """
-        Prediction using label powerset with a random forest base model.
-        @param train_indices
-        @param test_indices
-        @return predictions
+        Prediction using label powerset with random forest base model.
         """
-        base_model = RandomForestClassifier(n_estimators=20, random_state=49)
-        lp = LabelPowerset(classifier=base_model, require_dense=[False, True])
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        lp.fit(self.species.X[train_indices], Y_train)
-        preds = lp.predict(self.species.X[test_indices])
-        # print(soft_labels)
-        # preds = lco(soft_labels, Y_test)
+
+        preds = model.predict(self.X)
+        
         return preds
 
 
-    def mlknn_predict(self) -> np.ndarray:
+    def mlknn_predict(self, model) -> np.ndarray:
         """
         Prediction using ml-knn.
-        @param train_indices
-        @param test_indices
         @return predictions
         """
-        normalized_X = StandardScaler().fit_transform(self.X_train_valid)
 
-        def objective(trial):
-            s = trial.suggest_float("s", 0.1, 0.9, log=True)  
-            nn = trial.suggest_categorical("nn", [1, 3, 5, 7, 10])
-            mlknn = MLkNN(k=nn, s=s)
-            mlknn.fit(normalized_X[self.train_idx], self.Y_train)
-            preds = mlknn.predict(normalized_X[self.valid_idx])
-            f1 = f1_score(self.Y_valid, preds, average="micro")
-            return f1
+        preds = model.predict(self.X)
 
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
-        
-        #for metric, scoring_func, kwargs in self.scores:
-        #    print(round(scoring_func(self.Y[self.test_idx], preds, **kwargs), 3))
-
-
-        print("Number of finished trials: ", len(study.trials))
-        print("Best trial:")
-        best_trial = study.best_trial
-
-        print("  Value: {}".format(best_trial.value))
-        print("  Params: ")
-    
-        for key, value in best_trial.params.items():
-            print("    {}: {}".format(key, value))
-
-        normalized_X = StandardScaler().fit_transform(self.X)
-
-        mlknn = MLkNN(k=best_trial.params["nn"], s=best_trial.params["s"])
-        mlknn.fit(normalized_X[self.train_valid_idx], self.Y_train_valid)
-        preds = mlknn.predict(normalized_X[self.test_idx])
-
-        for metric, scoring_func, kwargs in self.scores:
-            print(round(scoring_func(self.Y_test, preds, **kwargs), 3))
-
-        return 1
+        return preds
 
 
     def hf_predict(self, model) -> np.ndarray:
         """
-        Prediction using harmonic function.
+        Predict with harmonic function.
         """
         
         #model = load(os.path.join(global_vars['model_dir'], "hf.pkl"))
         
-        X = np.concatenate((model.X, self.X_test))
+        X = np.concatenate((model.X, self.X))
 
         dist_matrix_squared = dist_matrix(X) ** 2 ### training/validation data
 
-        u = len(X)-len(self.X_test)
+        u = len(X)-len(self.X)
 
         train_indices = range(u)
 
@@ -215,27 +173,26 @@ class MLEvaluate(MLClassification):
 
     def knn_predict(self, models) -> np.ndarray:
 
-        preds = np.zeros((len(self.X_test), self.Y_train.shape[1]))
+        preds = np.zeros((len(self.X), self.num_species))
 
-        for s in range(len(models)):
-            preds[:, s] = models[s].predict(self.X_test)
+        for label in range(len(models)):
+            preds[:, label] = models[label].predict(self.X)
 
         return preds
 
 
 
-    def rf_predict(self, train_indices: np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def rf_predict(self, models) -> np.ndarray:
         """
         Predict using random forest.
-        @param train_indices
-        @param test_indices
         @return predictions
         """
-        Y_train, Y_test = self.species.Y[train_indices], self.species.Y[test_indices]
-        preds = np.zeros_like(Y_test)
-        for s in range(Y_train.shape[1]):
-            rf = RandomForestClassifier(random_state=73).fit(self.species.X[train_indices], Y_train[:, s])
-            preds[:, s] = rf.predict(self.species.X[test_indices])
+
+        preds = np.zeros((len(self.X), self.num_species))
+
+        for label in range(len(models)):
+            preds[:, label] = models[label].predict(self.X)
+
         return preds
 
 
