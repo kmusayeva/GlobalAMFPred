@@ -45,7 +45,7 @@ class MLClassification:
 
         self.score_names = [x[0] for x in self.scores]
 
-        ### specify which models are used
+        # specify which models are used
 
         self.methods_long = {"knn":"k-nearest neighbors", "mlknn": "multi-label knn", "hf":"harmonic function", 
                             "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting", 

@@ -77,7 +77,12 @@ def data_split_train_test(species):
 
     # create three subsets of data for training, validation and testing, with proportions 60%/20%/20%.
 
-    stratifier = IterativeStratification(n_splits=2, order=5, sample_distribution_per_fold=[0.2, 0.8])
+    num_species = species.Y_top.shape[1]
+
+    if num_species < 10: order = num_species
+    else: order = 10
+
+    stratifier = IterativeStratification(n_splits=2, order=order, sample_distribution_per_fold=[0.2, 0.8])
 
     train_valid_idx, test_idx = next(stratifier.split(species.X, species.Y_top))
 
@@ -86,16 +91,10 @@ def data_split_train_test(species):
     Y_test = species.Y_top.iloc[test_idx]
     X_test = species.X.iloc[test_idx]
 
-    #print(Y_train_valid.sum(axis=0).sort_values(ascending=False))
-    #print(Y_test.sum(axis=0).sort_values(ascending=False))
-
-    #df_train = np.concatenate((X_train_valid, Y_train_valid), axis=1)
-    #df_test = np.concatenate((X_test, Y_test), axis=1)
-
     df_train = pd.DataFrame(X_train_valid, columns=species.X.columns).join(pd.DataFrame(Y_train_valid, columns=species.Y_top.columns))
     df_test = pd.DataFrame(X_test, columns=species.X.columns).join(pd.DataFrame(Y_test, columns=species.Y_top.columns))
 
-    #print(df_train.iloc[:, (len(env_vars)):].sum(axis=0).sort_values(ascending=False))
+    print(df_train.shape, df_test.shape)
 
     df_train.to_excel(os.path.join(global_vars["data_dir"], "species_train.xlsx"), index=False)
     df_test.to_excel(os.path.join(global_vars["data_dir"], "species_test.xlsx"), index=False)
