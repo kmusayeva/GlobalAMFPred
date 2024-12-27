@@ -73,14 +73,14 @@ def haversine(coord1, coord2):
 
 
 
-def data_split_train_test(species):
+def iterative_data_split(species):
 
     # create three subsets of data for training, validation and testing, with proportions 60%/20%/20%.
 
     num_species = species.Y_top.shape[1]
 
     if num_species < 10: order = num_species
-    else: order = 10
+    else: order = 20
 
     stratifier = IterativeStratification(n_splits=2, order=order, sample_distribution_per_fold=[0.2, 0.8])
 
@@ -94,7 +94,6 @@ def data_split_train_test(species):
     df_train = pd.DataFrame(X_train_valid, columns=species.X.columns).join(pd.DataFrame(Y_train_valid, columns=species.Y_top.columns))
     df_test = pd.DataFrame(X_test, columns=species.X.columns).join(pd.DataFrame(Y_test, columns=species.Y_top.columns))
 
-    print(df_train.shape, df_test.shape)
 
     df_train.to_excel(os.path.join(global_vars["data_dir"], "species_train.xlsx"), index=False)
     df_test.to_excel(os.path.join(global_vars["data_dir"], "species_test.xlsx"), index=False)

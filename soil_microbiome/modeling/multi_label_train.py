@@ -12,6 +12,7 @@ from .species import *
 from .multi_label_classification import *
 from .harmonic_function import *
 from .ensembles_cchains import *
+from .autogluon_multilabel_predictor import *
 from mlp.multi_label_propagation import *
 from mlp.thresholding import *
 from sklearn.neighbors import KNeighborsClassifier
@@ -42,37 +43,45 @@ class MLTrain(MLClassification):
 
         self.Y_train, self.Y_test = self.Y[self.train_idx], self.Y[self.test_idx]
 
+        self.X_column_names = species.X.columns
+
+        self.Y_column_names = species.Y_top.columns
+
 
     def train(self) -> None:
         """
-        Model training.
+        Training all models specified in the parent class.
         """
 
         for method in self.methods:
 
-            func_name = f"{method}_train"
-
-            print("Training model: ", method)
-
-            if hasattr(self, func_name):
-
-                func = getattr(self, func_name)
-
-                model = func()
-
-                print(f">>>>Done: {func_name}")
-
-                file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
-
-                print(f"Saving {func_name} to a file.")
-
-                with open(file_name, "wb") as file:
-                    pickle.dump(model, file)
-
-                print(f"Model saved to {file_name}")
+            if method=="autogluon": # treat autogluon separately
+                self.autogluon_train()
 
             else:
-                raise AttributeError(f"Method {func_name} is not defined in the class.")
+                func_name = f"{method}_train"
+
+                print("Training model: ", self.methods_long[method])
+
+                if hasattr(self, func_name):
+
+                    func = getattr(self, func_name)
+
+                    model = func()
+
+                    print(f">>>>Done: {self.methods_long[method]}")
+
+                    file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
+
+                    print(f"Saving {func_name} to a file.")
+
+                    with open(file_name, "wb") as file:
+                        pickle.dump(model, file)
+
+                    print(f"Model saved to {file_name}")
+
+                else:
+                    raise AttributeError(f"Method {func_name} is not defined in the class.")
 
 
 
@@ -82,18 +91,15 @@ class MLTrain(MLClassification):
         """
 
         def objective(trial):
-            n_estimators = trial.suggest_int("n_estimators", 50, 200)
-            max_depth = trial.suggest_int("max_depth", 3, 20)
-            min_samples_split = trial.suggest_int("min_samples_split", 2, 20)
-            min_samples_leaf = trial.suggest_int("min_samples_leaf", 1, 20)
 
-            base_model = RandomForestClassifier(
-                    n_estimators=n_estimators,
-                    max_depth=max_depth,
-                    min_samples_split=min_samples_split,
-                    min_samples_leaf=min_samples_leaf,
-                    random_state=42
-                    )
+            params = {
+                "n_estimators": trial.suggest_int("n_estimators", 50, 200),
+                "max_depth": trial.suggest_int("max_depth", 3, 20),
+                "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
+                "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20)
+                }
+
+            base_model = RandomForestClassifier(**params, random_state=42)
 
             model = EnsembleClassifierChains(base_estimator=base_model, n_chains=2, random_state=23)
 
@@ -132,7 +138,7 @@ class MLTrain(MLClassification):
         Train harmonic function.
         """
         
-        X_dist_squared = dist_matrix(self.X) ** 2 ### training/validation data
+        X_dist_squared = dist_matrix(self.X) ** 2 # distance matrix of training and validation data
 
         def objective(trial):
             
@@ -183,6 +189,7 @@ class MLTrain(MLClassification):
         """
 
         def objective(trial):
+
             params = {
                 "n_estimators": trial.suggest_int("n_estimators", 50, 200),
                 "max_depth": trial.suggest_int("max_depth", 3, 20),
@@ -316,7 +323,7 @@ class MLTrain(MLClassification):
     
     def rf_train(self):
         """
-        Random forest.
+        Train random forest.
         """
        
         preds = np.zeros_like(self.Y_test)
@@ -362,7 +369,7 @@ class MLTrain(MLClassification):
 
     def gb_train(self):
         """
-        Gradient boosting.
+        Train gradient boosting.
         """
 
         preds = np.zeros_like(self.Y_test)
@@ -389,7 +396,7 @@ class MLTrain(MLClassification):
 
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=50)
+        study.optimize(objective, n_trials=100)
 
         best_trial = study.best_trial
         print("  Value: {}".format(best_trial.value))
@@ -409,6 +416,10 @@ class MLTrain(MLClassification):
 
 
     def xgb_train(self):
+        """
+        Train extreme gradient boosting.    
+        """
+
         dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
         dvalid = xgb.DMatrix(self.X_test, label=self.Y_test)
 
@@ -417,17 +428,11 @@ class MLTrain(MLClassification):
             param = {
                 "verbosity": 0,
                 "objective": "binary:logistic",
-                # use exact for small dataset.
-                "tree_method": "hist", ### do not forget to change it from exact to hist if you use categorical variables
-                # defines booster, gblinear for linear functions.
+                "tree_method": "hist", 
                 "booster": trial.suggest_categorical("booster", ["gbtree", "dart"]),
-                # L2 regularization weight.
                 "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
-                # L1 regularization weight.
                 "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-                # sampling ratio for training data.
                 "subsample": trial.suggest_float("subsample", 0.2, 1.0),
-                # sampling according to each tree.
                 "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
             }
 
@@ -469,7 +474,7 @@ class MLTrain(MLClassification):
 
     def svc_train(self):
         """
-        Support vector machine.
+        Train support vector machine.
         """
 
         preds = np.zeros_like(self.Y_test)
@@ -516,7 +521,6 @@ class MLTrain(MLClassification):
     def cm_train(self):
         """
         Prediction using consistency method.
-        @return predictions
         """
 
         X_dist_squared = dist_matrix(self.X) ** 2
@@ -551,3 +555,23 @@ class MLTrain(MLClassification):
         return 1
 
 
+    def autogluon_train(self):
+        """
+        Train autogluon multi-label classifier. 
+        Trains for each label separately.
+        """
+        print("here")
+        df_train = pd.DataFrame(self.X_train, columns=self.X_column_names).join(pd.DataFrame(self.Y_train, columns=self.Y_column_names))
+        df_test = pd.DataFrame(self.X_test, columns=self.X_column_names).join(pd.DataFrame(self.Y_test, columns=self.Y_column_names))
+
+        labels =  self.species_names
+        problem_types = ['binary'] * len(labels)
+        eval_metrics = ['f1'] * len(labels)
+        path = os.path.join(global_vars['model_dir'], "autogluon/")
+
+        model = MultilabelPredictor(labels=labels, problem_types=problem_types, 
+                                    eval_metrics=eval_metrics, path=global_vars['model_dir'])
+
+        model.fit(df_train, tuning_data=df_test)
+
+        return model

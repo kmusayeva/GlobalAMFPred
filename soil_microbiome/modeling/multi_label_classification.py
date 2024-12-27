@@ -51,4 +51,4 @@ class MLClassification:
                             "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting", 
                             "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains", "lp":"label powerset"}
 
-        self.methods = ["knn", "mlknn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp"]
+        self.methods = ["knn", "mlknn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp", "autogluon"]

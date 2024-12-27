@@ -9,28 +9,30 @@ env_vars = global_vars['input_variables']
 
 
 k = 20 # number of species of interest
-species = Species(file_name="species.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level)
-data_split_train_test(species)
 
+"""
+species = Species(file_name="species.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
+iterative_data_split(species)
+"""
 
 # print species info
 # species.print_info()
 
+
 """
-num_species = 20
-
 species_train = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']), \
-                        env_vars=env_vars, tax_level=tax_level, num_species_interest=num_species)
-
+                        env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
 MLTrain(species_train).train()
+"""
 
+
+"""
 species_test = Species(file_name="species_test.xlsx", x_dim=len(global_vars['input_variables']), \
-                        env_vars=env_vars, tax_level=tax_level, num_species_interest=5)
-
-print(species_test.Y_top)
+                        env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
 MLEvaluate(species_test).evaluate()
 """
 
+#MLEvaluate(species_test).autogluon_predict()
 
 #MLTrain(species).train()
 
