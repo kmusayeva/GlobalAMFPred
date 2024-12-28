@@ -1,8 +1,8 @@
 """
 Performs multi-label classification based on the Species object which contains all the information
 of the species of interest such as the environmental variables, and species distribution.
-The methods used are: ensembles of classifier chains, label powerset, harmonic function, consistency method,
-ml-knn, k-nn, gradient boosting, random forest, support vector machine.
+The methods used are: ensembles of classifier chains, label powerset, harmonic function,
+ml-knn, k-nn, gradient boosting, random forest, support vector machine, xgboost, lightgbm, autogluon.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -15,6 +15,7 @@ from mlp.thresholding import *
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
+from lightgbm import LGBMClassifier
 from sklearn.multioutput import ClassifierChain
 from skmultilearn.adapt import MLkNN
 from skmultilearn.problem_transform import LabelPowerset
@@ -27,12 +28,9 @@ from joblib import load
 class MLEvaluate(MLClassification):
     """
     Multilabel classification framework for species classification.
-    The methods used are ensemble of classifier chains, and binary relevance learners:
-    harmonic  function, k-nearest neighbours, random forest, gradient boosting, support vector machine.
-    The evaluation metrics used are family of F1 metrics, hamming loss, and subset accuracy.
     """
     def __init__(self, species: Species) -> None:
-        
+
         super().__init__(species)
 
         self.result = pd.DataFrame(index=self.score_names, columns=self.methods)
@@ -48,9 +46,9 @@ class MLEvaluate(MLClassification):
         """
 
         for method in self.methods:
-            
+
             if method == "autogluon":
-                
+
                 preds = self.autogluon_predict()
 
             else:
@@ -64,8 +62,8 @@ class MLEvaluate(MLClassification):
                 if method in ["ecc", "lp", "xgb", "mlknn"]:
                     preds = self.multi_label_predict(model)
                     if method == "ecc": preds = np.rint(preds)
-                    
-                elif method in ["knn", "rf", "gb", "svc"]:
+
+                elif method in ["knn", "rf", "gb", "svc", "lgbm"]:
                     preds = self.binary_relevance_predict(model)
 
                 elif method == "hf":
@@ -76,7 +74,7 @@ class MLEvaluate(MLClassification):
             for metric, scoring_func, kwargs in self.scores:
                 self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
 
-        
+
         print(f">>>Results: \n{self.result.to_string()}")
 
 
@@ -110,12 +108,12 @@ class MLEvaluate(MLClassification):
         """
         Predict with harmonic function.
         """
-        
+
         # Concatenate training and test data
         X = np.concatenate((model.X, self.X))
 
         # Compute the squared distance matrix
-        dist_matrix_squared = dist_matrix(X) ** 2 
+        dist_matrix_squared = dist_matrix(X) ** 2
 
         # Get the indices for training and test data
         u = len(X)-len(self.X)
@@ -127,7 +125,7 @@ class MLEvaluate(MLClassification):
         soft_labels = model.predict(dist_matrix_squared, train_indices, test_indices)
 
         # convert the soft labels to hard labels using 0.5 threshold
-        preds = basic(soft_labels, model.Y_train)    
+        preds = basic(soft_labels, model.Y_train)
 
         return preds
 
@@ -147,35 +145,16 @@ class MLEvaluate(MLClassification):
 
         # Iterate over each label-specific model directory
         for label_dir in os.listdir(root_model_dir):
+            if label_dir=="multilabel_predictor.pkl": continue
             label_model_path = os.path.join(root_model_dir, label_dir)
             predictor = TabularPredictor.load(label_model_path)
             label_predictions = predictor.predict(test_data)
             all_predictions[label_dir] = label_predictions
 
         new_names = ["_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()]
-        
+
         all_predictions.columns = new_names
-        
+
         preds = all_predictions[self.Y_column_names].to_numpy()
 
         return preds
-
-
-    def cm_predict(self) -> np.ndarray:
-        """
-        Prediction using consistency method.
-        @return predictions
-        """
-
-        X_test_dist_squared = dist_matrix(self.X) ** 2 
-        soft_labels = cm(X_test_dist_squared, self.Y, self.train_valid_idx, sigma=sigma, reg=reg)
-
-        preds = cmn(soft_labels, self.Y_train_valid) 
-
-        for metric, scoring_func, kwargs in self.scores:
-            print(round(scoring_func(self.Y_test, preds, **kwargs), 3))
-
-
-        return preds
-
-

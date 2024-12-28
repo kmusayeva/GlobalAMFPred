@@ -36,13 +36,12 @@ class MultilabelPredictor():
             Arguments passed into the initialization of each TabularPredictor.
 
     """
-
     multi_predictor_file = 'multilabel_predictor.pkl'
-
+    
     def __init__(self, labels, path, problem_types=None, eval_metrics=None, consider_labels_correlation=True, **kwargs):
         if len(labels) < 2:
             raise ValueError("MultilabelPredictor is only intended for predicting MULTIPLE labels (columns), use TabularPredictor for predicting one label (column).")
-        self.path = setup_outputdir(path, warn_if_exist=False)
+        self.path = path
         self.labels = labels
         self.consider_labels_correlation = consider_labels_correlation
         self.predictors = {}  # key = label, value = TabularPredictor or str path to the TabularPredictor for this label
@@ -54,7 +53,7 @@ class MultilabelPredictor():
         eval_metric = None
         for i in range(len(labels)):
             label = labels[i]
-            path_i = self.path + "Predictor_" + label
+            path_i = os.path.join(self.path, f"Predictor_{label}")
             if problem_types is not None:
                 problem_type = problem_types[i]
             if eval_metrics is not None:

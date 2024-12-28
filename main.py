@@ -1,5 +1,6 @@
 from mlp.multi_label_propagation import *
 from soil_microbiome.modeling import *
+import argparse
 
 # taxonomic level is species
 tax_level = 'species'
@@ -8,34 +9,25 @@ tax_level = 'species'
 env_vars = global_vars['input_variables']
 
 
-k = 20 # number of species of interest
+def main():
+    parser = argparse.ArgumentParser(description="Train or evaluate a species model.")
+    parser.add_argument('--mode', type=str, required=True, choices=['train', 'eval'],
+                        help="Mode to run: 'train' or 'eval'.")
+    parser.add_argument('--num_species', type=int, required=True, help="Number of top frequent species.")
 
-"""
-species = Species(file_name="species.xlsx", x_dim=len(global_vars['input_variables']), env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
-iterative_data_split(species)
-"""
-
-# print species info
-# species.print_info()
+    args = parser.parse_args()
 
 
-"""
-species_train = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']), \
-                        env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
-MLTrain(species_train).train()
-"""
+    if args.mode == 'train':
+        species = Species(file_name="species_train.xlsx", x_dim=len(global_vars['input_variables']),
+                        env_vars=env_vars, tax_level=tax_level, num_species_interest=args.num_species)
+        MLTrain(species).train()
+
+    elif args.mode == 'eval':
+        species = Species(file_name="species_test.xlsx", x_dim=len(global_vars['input_variables']),
+                                env_vars=env_vars, tax_level=tax_level, num_species_interest=args.num_species)
+        MLEvaluate(species).evaluate()
 
 
-"""
-species_test = Species(file_name="species_test.xlsx", x_dim=len(global_vars['input_variables']), \
-                        env_vars=env_vars, tax_level=tax_level, num_species_interest=k)
-MLEvaluate(species_test).evaluate()
-"""
-
-#MLEvaluate(species_test).autogluon_predict()
-
-#MLTrain(species).train()
-
-#MLEvaluate(species).evaluate()
-
-#MLEvaluate(species).hf_predict()
+if __name__ == "__main__":
+    main()

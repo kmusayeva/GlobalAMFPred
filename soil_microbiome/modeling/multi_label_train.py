@@ -19,6 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.multioutput import ClassifierChain
+from lightgbm import LGBMClassifier
 from skmultilearn.adapt import MLkNN
 import xgboost as xgb
 from skmultilearn.problem_transform import LabelPowerset
@@ -30,7 +31,7 @@ import optuna
 class MLTrain(MLClassification):
 
     def __init__(self, species: Species, cv: int = 5) -> None:
-    
+
         super().__init__(species, cv)
 
         # split data into train/test sets
@@ -125,9 +126,9 @@ class MLTrain(MLClassification):
 
 
         base_model = RandomForestClassifier(**best_trial.params, random_state=42)
-        
+
         model = EnsembleClassifierChains(base_estimator=base_model, n_chains=2, random_state=23)
-        
+
         model.fit(self.X_train, self.Y_train)
 
         return model
@@ -137,22 +138,22 @@ class MLTrain(MLClassification):
         """
         Train harmonic function.
         """
-        
+
         X_dist_squared = dist_matrix(self.X) ** 2 # distance matrix of training and validation data
 
         def objective(trial):
-            
-            sigma = trial.suggest_float("sigma", 0.1, 2.0, log=True)  
-            
+
+            sigma = trial.suggest_float("sigma", 0.1, 2.0, log=True)
+
             nn = trial.suggest_categorical("nn", [5, 7, 10])
-            
+
             model = HarmonicFunction(sigma=sigma, nn=nn)
-            
+
             model.fit(self.X, self.Y_train)
-            
+
             soft_labels = model.predict(X_dist_squared, self.train_idx, self.test_idx)
-            
-            preds = basic(soft_labels, self.Y_train)    
+
+            preds = basic(soft_labels, self.Y_train)
 
             f1 = f1_score(self.Y_test, preds, average="micro")
 
@@ -160,23 +161,23 @@ class MLTrain(MLClassification):
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=100, timeout=600)
-        
+
         best_trial = study.best_trial
 
         best_trial = study.best_trial
 
         print("  Value: {}".format(best_trial.value))
         print("  Params: ")
-        
+
         for key, value in best_trial.params.items():
             print("    {}: {}".format(key, value))
 
         nn = best_trial.params["nn"]
-        
+
         sigma = best_trial.params["sigma"]
 
         model = HarmonicFunction(sigma=sigma, nn=nn)
-        
+
         model.fit(self.X, self.Y)
 
         return model
@@ -206,7 +207,7 @@ class MLTrain(MLClassification):
 
             preds = model.predict(self.X_test)
             #print(soft_labels)
-            #preds = lco(soft_labels, self.Y_train)    
+            #preds = lco(soft_labels, self.Y_train)
 
             f1 = f1_score(self.Y_test, preds, average="micro")
 
@@ -225,7 +226,7 @@ class MLTrain(MLClassification):
 
 
         base_model = RandomForestClassifier(**best_trial.params, random_state=42)
-        
+
         model = LabelPowerset(classifier=base_model, require_dense=[False, True])
 
         model.fit(self.X, self.Y)
@@ -235,33 +236,33 @@ class MLTrain(MLClassification):
 
     def mlknn_train(self):
         """
-        Prediction using ml-knn.
+        Train ml-knn.
         """
 
         def objective(trial):
 
-            s = trial.suggest_float("s", 0.1, 0.9, log=True) 
+            s = trial.suggest_float("s", 0.1, 0.9, log=True)
 
             nn = trial.suggest_categorical("nn", [1, 3, 5, 7, 10])
 
             model = MLkNN(k=nn, s=s)
-            
+
             model.fit(self.X_train, self.Y_train)
 
             preds = model.predict(self.X_test)
 
             f1 = f1_score(self.Y_test, preds, average="micro")
-            
+
             return f1
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=100, timeout=600)
-        
+
         best_trial = study.best_trial
 
         print("  Value: {}".format(best_trial.value))
         print("  Params: ")
-    
+
         for key, value in best_trial.params.items():
             print("    {}: {}".format(key, value))
 
@@ -286,7 +287,7 @@ class MLTrain(MLClassification):
         nn_grid = {"nn": list(range(1, 15))}
 
         def objective(trial):
-            
+
             nn = trial.suggest_categorical("nn", nn_grid["nn"])
 
             for s in range(self.Y_train.shape[1]):
@@ -301,7 +302,7 @@ class MLTrain(MLClassification):
         sampler = optuna.samplers.GridSampler(nn_grid)
         study = optuna.create_study(direction="maximize", sampler=sampler)
         study.optimize(objective, n_trials=len(nn_grid["nn"]))
-        
+
         best_trial = study.best_trial
 
         for key, value in best_trial.params.items():
@@ -312,7 +313,7 @@ class MLTrain(MLClassification):
         models = {}
 
         for s in range(self.Y.shape[1]):
-                
+
                 model = KNeighborsClassifier(n_neighbors=nn).fit(self.X, self.Y[:, s])
 
                 models[s] = model
@@ -320,12 +321,12 @@ class MLTrain(MLClassification):
         return models
 
 
-    
+
     def rf_train(self):
         """
         Train random forest.
         """
-       
+
         preds = np.zeros_like(self.Y_test)
 
         def objective(trial):
@@ -336,7 +337,7 @@ class MLTrain(MLClassification):
                 "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
                 "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20)
                 }
-            
+
             for label in range(self.Y_train.shape[1]):
                 rf = RandomForestClassifier(**params, random_state=42)
                 model = rf.fit(self.X_train, self.Y_train[:, label])
@@ -367,6 +368,65 @@ class MLTrain(MLClassification):
         return models
 
 
+
+    def lgbm_train(self):
+       """
+       Train LightGBM.
+       """
+
+       def objective(trial):
+
+            param = {
+                "objective": "binary",
+                "boosting_type": "gbdt",
+                "metric": "None",
+                "num_leaves": trial.suggest_int("num_leaves", 20, 150),
+                "max_depth": trial.suggest_int("max_depth", 3, 15),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+                "n_estimators": trial.suggest_int("n_estimators", 50, 500),
+                "min_child_samples": trial.suggest_int("min_child_samples", 5, 50),
+                "subsample": trial.suggest_float("subsample", 0.5, 1.0, step=0.1),
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0, step=0.1),
+                }
+
+            models = []
+
+            for i in range(self.Y_train.shape[1]):
+                clf = LGBMClassifier(**param, random_state=42, verbose=-1)
+                clf.fit(self.X_train, self.Y_train[:, i])
+                models.append(clf)
+
+            preds = np.zeros(self.Y_test.shape)
+            for i, model in enumerate(models):
+                preds[:, i] = model.predict(self.X_test)
+
+            f1_micro = f1_score(self.Y_test, preds, average="micro")
+            return f1_micro
+
+
+       study = optuna.create_study(direction="maximize")
+       study.optimize(objective, n_trials=100, timeout=600)
+
+       best_trial = study.best_trial
+
+       print("  Value: {}".format(best_trial.value))
+       print("  Params: ")
+       for key, value in best_trial.params.items():
+           print("    {}: {}".format(key, value))
+
+
+       models = {}
+
+       for label in range(self.Y.shape[1]):
+           lgbm = LGBMClassifier(**best_trial.params, random_state=42, verbose=-1)
+           models[label] = lgbm.fit(self.X, self.Y[:, label])
+
+
+       return models
+
+
+
+
     def gb_train(self):
         """
         Train gradient boosting.
@@ -384,7 +444,7 @@ class MLTrain(MLClassification):
                 "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
                 "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
                 "subsample": trial.suggest_float("subsample", 0.5, 1.0)
-            }    
+                }
 
             for label in range(self.Y_train.shape[1]):
                 gb = GradientBoostingClassifier(**params, random_state=42)
@@ -411,13 +471,13 @@ class MLTrain(MLClassification):
             gb = GradientBoostingClassifier(**best_trial.params, random_state=42)
             models[label] = gb.fit(self.X, self.Y[:, label])
 
-        return models           
+        return models
 
 
 
     def xgb_train(self):
         """
-        Train extreme gradient boosting.    
+        Train extreme gradient boosting.
         """
 
         dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
@@ -428,7 +488,7 @@ class MLTrain(MLClassification):
             param = {
                 "verbosity": 0,
                 "objective": "binary:logistic",
-                "tree_method": "hist", 
+                "tree_method": "hist",
                 "booster": trial.suggest_categorical("booster", ["gbtree", "dart"]),
                 "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
                 "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
@@ -459,7 +519,7 @@ class MLTrain(MLClassification):
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective_fungi, n_trials=100, timeout=600)
-                
+
         best_trial = study.best_trial
         print("  Value: {}".format(best_trial.value))
         print("  Params: ")
@@ -478,12 +538,12 @@ class MLTrain(MLClassification):
         """
 
         preds = np.zeros_like(self.Y_test)
-        
+
         def objective(trial):
 
             params = {
                 "C": trial.suggest_float("C", 1e-3, 1e2),
-                "gamma": trial.suggest_float("gamma", 1e-4, 1e1, log=True) 
+                "gamma": trial.suggest_float("gamma", 1e-4, 1e1, log=True)
                 }
 
             for label in range(self.Y_train.shape[1]):
@@ -517,47 +577,9 @@ class MLTrain(MLClassification):
 
 
 
-
-    def cm_train(self):
-        """
-        Prediction using consistency method.
-        """
-
-        X_dist_squared = dist_matrix(self.X) ** 2
-
-        def objective(trial):
-            
-            sigma = trial.suggest_float("sigma", 0.3, 2.0, log=True)  
-            
-            reg = trial.suggest_float("reg", 0.1, 0.99, log=True) 
-            
-            soft_labels = cm(X_dist_squared, self.Y, self.train_idx, sigma=sigma, reg=reg)
-            
-            preds = cmn(soft_labels, self.Y_train)   
-
-            f1 = f1_score(self.Y_test, preds, average="micro")
-
-            return f1
-
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
-        
-        best_trial = study.best_trial
-
-        for key, value in best_trial.params.items():
-            print("    {}: {}".format(key, value))
-
-        reg = best_trial.params["reg"]
-        sigma = best_trial.params["sigma"]
-
-        ### update
-
-        return 1
-
-
     def autogluon_train(self):
         """
-        Train autogluon multi-label classifier. 
+        Train autogluon multi-label classifier.
         Trains for each label separately.
         """
         print("here")
@@ -569,8 +591,8 @@ class MLTrain(MLClassification):
         eval_metrics = ['f1'] * len(labels)
         path = os.path.join(global_vars['model_dir'], "autogluon/")
 
-        model = MultilabelPredictor(labels=labels, problem_types=problem_types, 
-                                    eval_metrics=eval_metrics, path=global_vars['model_dir'])
+        model = MultilabelPredictor(labels=labels, problem_types=problem_types,
+                                    eval_metrics=eval_metrics, path=path)
 
         model.fit(df_train, tuning_data=df_test)
 

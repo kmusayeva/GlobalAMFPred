@@ -14,20 +14,18 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, hamming_los
 
 
 class MLClassification:
-    
+
     """
     Multilabel classification framework for species classification.
-    The methods used are ensemble of classifier chains, and binary relevance learners:
-    harmonic  function, k-nearest neighbours, random forest, gradient boosting, support vector machine.
     The evaluation metrics used are family of F1 metrics, hamming loss, and subset accuracy.
     """
 
     def __init__(self, species: Species, cv: int = 5) -> None:
-        
+
         self.cv = cv
 
         self.X = species.X.to_numpy()
-        
+
         self.Y = species.Y_top.to_numpy()
 
         self.species_names = species.Y_top.columns.tolist()
@@ -39,7 +37,7 @@ class MLClassification:
             #("F1", f1_score, {"average": "samples"}),
             ("Macro-F1", f1_score, {"average": "macro"}),
             ("Micro-F1", f1_score, {"average": "micro"}),
-            ("SA", accuracy_score, {}),                   
+            ("SA", accuracy_score, {}),
             ("HL", hamming_loss, {})
             ]
 
@@ -47,8 +45,10 @@ class MLClassification:
 
         # specify which models are used
 
-        self.methods_long = {"knn":"k-nearest neighbors", "mlknn": "multi-label knn", "hf":"harmonic function", 
-                            "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting", 
-                            "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains", "lp":"label powerset"}
+        self.methods_long = {"knn":"k-nearest neighbors", "mlknn": "multi-label knn", "hf":"harmonic function",
+                            "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting",
+                            "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains", "lp":"label powerset",
+                            "autogluon":"autogluon", "lgbm":"lightgbm"}
 
-        self.methods = ["knn", "mlknn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp", "autogluon"]
+        self.methods = ["knn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp", "lgbm", "autogluon"]
+        #self.methods = ["autogluon"]
