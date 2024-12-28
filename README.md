@@ -1,4 +1,4 @@
-## Soil Microbiome Prediction
+## AMF Prediction
 
 This project addresses soil microbiome prediction problem in the context of multi-label classification. The focus here is specifically on arbuscular mycorrhizal fungi (AMF).
 The AMF data used is publicly available on [Global AM Fungi](https://globalamfungi.com/). 
