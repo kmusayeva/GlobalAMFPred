@@ -2,7 +2,7 @@
 
 This project is dedicated to the analysis and prediction of arbuscular mycorrhizal fungi (AMF) data obtained from [Global AM Fungi](https://globalamfungi.com/) website. 
 
-See the [GlobalAMF.ipynb] for preliminary analysis (still ongoing) of the data. 
+See the [GlobalAMF.ipynb] for detailed analysis (still ongoing) of the data. 
 
 Predictive models used are:
 
