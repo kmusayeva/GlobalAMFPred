@@ -1,16 +1,19 @@
+"""
+Author: Khadija Musayeva
+Email: khmusayeva@gmail.com
+"""
+
 import numpy as np
 from mlp.multi_label_propagation import *
-
 
 class HarmonicFunction:
     def __init__(self, sigma: float, nn: int, iters: int = None):
         """
-        Harmonic Function Model for label propagation.
+        Harmonic Function for label propagation.
 
-        Args:
-            sigma (float): Length-scale parameter of Gaussian kernel.
-            nn (int): Number of neighbors.
-            iters (int, optional): Number of iterations for iterative label propagation.
+        @param: sigma: Length-scale parameter of Gaussian kernel.
+        @param: nn: Number of neighbors.
+        @param: iters (optional): Number of iterations for iterative label propagation.
         """
         self.sigma = sigma
         self.nn = nn
@@ -21,9 +24,8 @@ class HarmonicFunction:
 
     def fit(self, X: np.ndarray, Y_train: np.ndarray):
         """
-        Args:
-            dist_matrix_squared (np.ndarray): Precomputed Euclidean distance matrix.
-            Y_train (np.ndarray): Training labels or response matrix.
+        @param: dist_matrix_squared (np.ndarray): Precomputed Euclidean distance matrix.
+        @param: Y_train (np.ndarray): Training labels or response matrix.
         """
         
         #if self.dist_matrix_squared is None or self.Y_train is None or self.train_indices is None:
@@ -37,11 +39,10 @@ class HarmonicFunction:
 
     def predict(self, dist_matrix_squared: np.ndarray, train_indices:np.ndarray, test_indices: np.ndarray) -> np.ndarray:
         """
-        Args:
-            test_indices (np.ndarray): Indices of test data points.
-
-        Returns:
-            np.ndarray: Predicted soft labels for test data points.
+        @param dist_matrix_squared: squared distance matrix of the whole input matrix
+        @param train_indices: indices of the training data
+        @param test_indices: indices of the test data
+        @return: a matrix of soft labels
         """
         
         transition_matrix = transition_matrix_gaussian(

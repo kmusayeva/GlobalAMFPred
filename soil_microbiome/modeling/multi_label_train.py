@@ -1,8 +1,4 @@
 """
-Performs multi-label classification based on the Species object which contains all the information
-of the species of interest such as the environmental variables, and species distribution.
-The methods used are: ensembles of classifier chains, label powerset, harmonic function, consistency method,
-ml-knn, k-nn, gradient boosting, random forest, support vector machine.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -29,7 +25,12 @@ import optuna
 
 
 class MLTrain(MLClassification):
-
+    """
+    Performs multi-label classification based on Species object which contains
+    the environmental and species data.
+    The methods used are ensembles of classifier chains, label powerset, harmonic function, consistency method,
+    ml-knn, k-nn, gradient boosting, random forest, support vector machine, xgboost, lightgbm, autogluon.
+    """
     def __init__(self, species: Species, cv: int = 5) -> None:
 
         super().__init__(species, cv)

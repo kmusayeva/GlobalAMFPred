@@ -1,6 +1,4 @@
 """
-Creates species from the species data set (this path should be set in the global_vars)
-and the taxonomic level: order, family, genus or species.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -14,7 +12,10 @@ from typing import List, Tuple, Dict, Optional
 
 
 class Species:
-    def __init__(self, 
+    """
+    Creates species class from the species dataset (the path should be set in the global_vars).
+    """
+    def __init__(self,
                 file_name: str,
                 x_dim: int, 
                 env_vars: Optional[List[str]] = None,
@@ -24,9 +25,9 @@ class Species:
                 species: Optional[List[str]] = None) -> None:
 
         """
-        Initialize the Species object with X as environmental variables, Y abundancy matrix,
+        Initialize Species object with X as environmental variables, Y abundancy matrix,
         Yb absence/presence matrix, Y_top top most frequent species.
-        Calculate label ditrbution, class imbalance information.
+        Calculate the label ditrbution, class imbalance information.
         @param file_name: file name to read the data from
         @param x_dim: total number of variables in input data
         @param tax_level: taxonomic level: order, family, genus, or species

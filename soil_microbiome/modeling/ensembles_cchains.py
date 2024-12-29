@@ -1,6 +1,5 @@
 """
 Implements ensemble of classifier chains of Read et al.  2011
-Read, J., Pfahringer, B., Holmes, G., & Frank, E. (2011). Classifier chains for multi-label classification.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -21,7 +20,7 @@ class EnsembleClassifierChains:
         """
         @param base_estimator: random forest or support vector machine
         @param n_chains: size of the ensemble of classifier  chains
-        @param random_state: randomness of the chain order
+        @param random_state: for reproducibility of the chain order
         """
         self.base_estimator = base_estimator
         self.n_chains = n_chains

@@ -1,8 +1,4 @@
 """
-Performs multi-label classification based on the Species object which contains all the information
-of the species of interest such as the environmental variables, and species distribution.
-The methods used are: ensembles of classifier chains, label powerset, harmonic function,
-ml-knn, k-nn, gradient boosting, random forest, support vector machine, xgboost, lightgbm, autogluon.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -27,7 +23,10 @@ from joblib import load
 
 class MLEvaluate(MLClassification):
     """
-    Multilabel classification framework for species classification.
+    Evaluation of trained models.
+    The methods used are ensembles of classifier chains, label powerset, harmonic function,
+    ml-knn, k-nn, gradient boosting, random forest, support vector machine,
+    xgboost, lightgbm, autogluon.
     """
     def __init__(self, species: Species) -> None:
 

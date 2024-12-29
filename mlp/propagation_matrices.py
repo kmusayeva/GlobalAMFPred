@@ -15,9 +15,9 @@ from sklearn.metrics.pairwise import pairwise_distances
 def Laplacian_matrix(dist_matrix_squared: np.ndarray, sigma: float):
     """
     Computes Laplacian matrix.
-    :param dist_matrix_squared: squared Euclidean distance matrix
-    :param sigma: length-scale parameter of the Gaussian kernel
-    :return: np.ndarray, symmetric normalized Laplacian
+    @param dist_matrix_squared: squared Euclidean distance matrix
+    @param sigma: length-scale parameter of the Gaussian kernel
+    @return: np.ndarray, symmetric normalized Laplacian
     """
     W = similarity_matrix(dist_matrix_squared, sigma)
     W_row_sum = W.sum(axis=1)
@@ -28,9 +28,9 @@ def Laplacian_matrix(dist_matrix_squared: np.ndarray, sigma: float):
 def propagation_matrix_normalized_Laplacian(dist_matrix_squared: np.ndarray, sigma: float):
     """
     Computes normalized Laplacian matrix.
-    :param dist_matrix_squared: squared Euclidean distance matrix
-    :param sigma: length-scale parameter of the Gaussian kernel
-    :return: np.ndarray, symmetric normalizaed Laplacian
+    @param dist_matrix_squared: squared Euclidean distance matrix
+    @param sigma: length-scale parameter of the Gaussian kernel
+    @return: np.ndarray, symmetric normalizaed Laplacian
     """
     P = similarity_matrix(dist_matrix_squared, sigma)
     P_row_sum = P.sum(axis=1)
@@ -39,15 +39,15 @@ def propagation_matrix_normalized_Laplacian(dist_matrix_squared: np.ndarray, sig
     return (D.dot(P).dot(D)).round(3)
 
 
-def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=False):
+def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=False)->np.ndarray:
     """
     Computes transition matrix based on the Gaussian kernel.
-    :param dist_matrix_squared:
-    :param label:
-    :param sigma:
-    :param nn:
-    :param row_norm:
-    :return:
+    @param dist_matrix_squared:
+    @param label: training indices
+    @param sigma: length-scale parameter of the Gaussian kernel
+    @param nn: number of nearest neighbours
+    @param row_norm: indicates whether to normalize the matrix in a row_wise manner
+    @return: transition matrix
     """
     P = similarity_matrix(dist_matrix_squared, sigma, diagonal=True)
     sorted_indices = np.argsort(-P, axis=1)  # Sort indices in descending order
@@ -65,13 +65,13 @@ def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=F
     return column_row_normalize(P_prime)
 
 
-def transition_matrix_linear_patch(X, dist_matrix, nn):
+def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
     """
     implements the propagation matrix of Wang and Zang, 2008
-    :param X:
-    :param dist_matrix:
-    :param nn:
-    :return:
+    @param X: input data
+    @param dist_matrix: distance matrix
+    @param nn: number of nearest neighbours
+    @return:
     """
     nn_matrix = np.argsort(dist_matrix)
     n = X.shape[0]
@@ -98,11 +98,11 @@ def transition_matrix_linear_patch(X, dist_matrix, nn):
     return W
 
 
-def chi_square_transform(Y):
+def chi_square_transform(Y)->np.ndarray:
     """
     Computes the chi-square transformation
-    :param Y:
-    :return:
+    @param Y: label matrix
+    @return: transformed label matrix
     """
     total_sum = Y.values.sum()
     row_sum = Y.sum(axis=1)
@@ -113,11 +113,11 @@ def chi_square_transform(Y):
     return Y_chi_square
 
 
-def dist_matrix(X):
+def dist_matrix(X)->np.ndarray:
     """
-    computes euclidean distance
-    :param X:
-    :return:
+    Computes euclidean distance
+    @param X: input data
+    @return: square matrix of euclidean distances between each observation in X
     """
     normalized_X = StandardScaler().fit_transform(X)
     distance_matrix = pairwise_distances(normalized_X, metric='euclidean')
@@ -127,10 +127,10 @@ def dist_matrix(X):
 def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
     """
     computes the similarity matrix
-    :param dist_matrix_squared:
-    :param sigma:
-    :param diagonal:
-    :return:
+    @param dist_matrix_squared: euclidean distance matrix
+    @param sigma: length-scale parameter of the Gaussian kernel
+    @param diagonal: if set to True diagonal elements are kept
+    @return:
     """
     W = np.exp(-dist_matrix_squared / sigma ** 2)
     if diagonal is False:
@@ -140,9 +140,9 @@ def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
 
 def row_normalize(A):
     """
-    row-normalize the given matrix
-    :param A:
-    :return:
+    Row normalizes the similarity  matrix
+    @param A: similarity matrix
+    @return: normalized matrix
     """
     row_sum = np.sum(A, axis=1, keepdims=True)
     A_row_norm = A / row_sum
@@ -151,9 +151,9 @@ def row_normalize(A):
 
 def column_row_normalize(A):
     """
-    column-normalize the given matrix
-    :param A:
-    :return:
+    Column normalizes the similarity matrix
+    @param A: input matrix
+    @return: normalized matrix
     """
     A_col_norm = A / A.sum(axis=0)
     return row_normalize(A_col_norm)

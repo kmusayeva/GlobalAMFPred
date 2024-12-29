@@ -1,8 +1,4 @@
 """
-Performs multi-label classification based on the Species object which contains all the information
-of the species of interest such as the environmental variables, and species distribution.
-The methods used are: ensembles of classifier chains, label powerset, harmonic function, consistency method,
-ml-knn, k-nn, gradient boosting, random forest, support vector machine.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
@@ -17,6 +13,8 @@ class MLClassification:
 
     """
     Multilabel classification framework for species classification.
+    The methods used are ensembles of classifier chains, label powerset, harmonic function, consistency method,
+    ml-knn, k-nn, gradient boosting, random forest, support vector machine, xgboost, lightgbm, autogluon.
     The evaluation metrics used are family of F1 metrics, hamming loss, and subset accuracy.
     """
 
