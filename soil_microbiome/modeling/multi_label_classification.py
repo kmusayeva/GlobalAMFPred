@@ -45,8 +45,7 @@ class MLClassification:
 
         self.methods_long = {"knn":"k-nearest neighbors", "mlknn": "multi-label knn", "hf":"harmonic function",
                             "svc":"support vector machine", "rf":"random forest", "gb":"gradient boosting",
-                            "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains", "lp":"label powerset",
-                            "autogluon":"autogluon", "lgbm":"lightgbm"}
-
-        self.methods = ["knn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lp", "lgbm", "autogluon"]
+                            "xgb":"extreme gradient boosting", "ecc":"ensemble of classifier chains",
+                             "lp":"label powerset", "autogluon":"autogluon", "lgbm":"lightgbm"}
+        self.methods = ["knn", "hf", "svc", "rf", "gb", "xgb", "ecc", "lgbm", "autogluon"]
         #self.methods = ["autogluon"]
