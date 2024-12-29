@@ -11,8 +11,8 @@ Predictive models used are:
 4. Support-vector machines (svm)
 5. Autogluon
 
-Here, most methods, hf, rf, gb, k-nnn, svm, lgbm, xgboost and autogluon are binary relevance learners: learning is done for each label separately.
-On the other hand, ecc and lp leverage the label relationship.
+All methods, except ecc and lp, are binary relevance learners: learning is done for each label separately.
+On the other hand, ecc and lp leverage label relationships.
 
 
 
