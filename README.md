@@ -3,13 +3,15 @@
 This project addresses soil microbiome prediction problem in the context of multi-label classification. The focus here is specifically on arbuscular mycorrhizal fungi (AMF).
 The AMF data used is publicly available on [Global AM Fungi](https://globalamfungi.com/) website. 
 
+See the [GlobalAMF.ipynb] for preliminary analysis of the data. 
+
 Predictive models used are:
 
 1. Nearest-neighbour based approaches: Harmonic Function (hf), (multi-label) k-nearest neighbour
-2. Random Forest (rf), Gradient Boosting (gb), LightGBM (lgbm), XGBoost, CatBoost
-3. Ensembles of classifier chains (ecc), Label Powerset (lp)
-4. Support-vector machines (svm)
-5. Autogluon
+2. Tree-based methods: Random Forest (rf), Gradient Boosting (gb), LightGBM (lgbm), XGBoost, CatBoost
+3. Multi-label learners: Ensembles of classifier chains (ecc), Label Powerset (lp)
+4. Margin classifier: Support-vector machines (svm)
+5. Ensembles of methods: Autogluon
 
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
 On the other hand, ecc and lp leverage label relationships.
