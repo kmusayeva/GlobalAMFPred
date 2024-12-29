@@ -9,7 +9,7 @@ Predictive models used are:
 1. Nearest-neighbour based approaches: Harmonic Function, (multi-label) k-nearest neighbour
 2. Tree-based methods: Random Forest, Gradient Boosting, LightGBM, XGBoost, CatBoost
 3. Margin classifier: Support-vector machines
-4. Multi-label learners: Ensembles of classifier chains (based on random forest), Label Powerset (based on support vector machine)
+4. Multi-label learners: Ensembles of classifier chains (ecc, based on random forest), Label Powerset (lp, based on support vector machine)
 5. Auto ML, ensembles of methods/stacking: Autogluon
 
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
