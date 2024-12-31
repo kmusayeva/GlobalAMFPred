@@ -67,7 +67,7 @@ def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=F
 
 def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
     """
-    implements the propagation matrix of Wang and Zang, 2008
+    Implements the propagation matrix of Wang and Zang, 2008.
     @param X: input data
     @param dist_matrix: distance matrix
     @param nn: number of nearest neighbours
@@ -100,9 +100,9 @@ def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
 
 def chi_square_transform(Y)->np.ndarray:
     """
-    Computes the chi-square transformation
+    Computes the chi-square transformation of the label matrix.
     @param Y: label matrix
-    @return: transformed label matrix
+    @return: chi-square transformed label matrix
     """
     total_sum = Y.values.sum()
     row_sum = Y.sum(axis=1)
@@ -115,9 +115,9 @@ def chi_square_transform(Y)->np.ndarray:
 
 def dist_matrix(X)->np.ndarray:
     """
-    Computes euclidean distance
+    Computes the euclidean distance of all rows of X.
     @param X: input data
-    @return: square matrix of euclidean distances between each observation in X
+    @return: distance matrix
     """
     normalized_X = StandardScaler().fit_transform(X)
     distance_matrix = pairwise_distances(normalized_X, metric='euclidean')
@@ -126,11 +126,11 @@ def dist_matrix(X)->np.ndarray:
 
 def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
     """
-    computes the similarity matrix
+    Computes the similarity matrix based on the given distance matrix.
     @param dist_matrix_squared: euclidean distance matrix
     @param sigma: length-scale parameter of the Gaussian kernel
-    @param diagonal: if set to True diagonal elements are kept
-    @return:
+    @param diagonal: diagonal elements are kept if set to True 
+    @return: similarity matrix
     """
     W = np.exp(-dist_matrix_squared / sigma ** 2)
     if diagonal is False:
@@ -140,7 +140,7 @@ def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
 
 def row_normalize(A):
     """
-    Row normalizes the similarity  matrix
+    Row normalizes the similarity  matrix.
     @param A: similarity matrix
     @return: normalized matrix
     """
@@ -151,7 +151,7 @@ def row_normalize(A):
 
 def column_row_normalize(A):
     """
-    Column normalizes the similarity matrix
+    Column normalizes the similarity matrix.
     @param A: input matrix
     @return: normalized matrix
     """
@@ -164,4 +164,3 @@ def convert_to_df(x):
         return x
     else:
         return pd.DataFrame(x)
-
