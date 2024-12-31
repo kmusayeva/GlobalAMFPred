@@ -115,7 +115,7 @@ def chi_square_transform(Y)->np.ndarray:
 
 def dist_matrix(X)->np.ndarray:
     """
-    Computes the euclidean distance of all rows of X.
+    Computes the euclidean distance between all rows in X.
     @param X: input data
     @return: distance matrix
     """
@@ -127,7 +127,7 @@ def dist_matrix(X)->np.ndarray:
 def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
     """
     Computes the similarity matrix based on the given distance matrix.
-    @param dist_matrix_squared: euclidean distance matrix
+    @param dist_matrix_squared: Euclidean distance matrix
     @param sigma: length-scale parameter of the Gaussian kernel
     @param diagonal: diagonal elements are kept if set to True 
     @return: similarity matrix
@@ -140,8 +140,8 @@ def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
 
 def row_normalize(A):
     """
-    Row normalizes the similarity  matrix.
-    @param A: similarity matrix
+    Row normalizes the given  matrix.
+    @param A: input matrix
     @return: normalized matrix
     """
     row_sum = np.sum(A, axis=1, keepdims=True)
@@ -151,7 +151,7 @@ def row_normalize(A):
 
 def column_row_normalize(A):
     """
-    Column normalizes the similarity matrix.
+    Column normalizes the given matrix.
     @param A: input matrix
     @return: normalized matrix
     """
