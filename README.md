@@ -33,7 +33,7 @@ python main.py --mode train --num_species 20
 
 To test the models:
 ```
-# for evaluation, num_species should not be larger than what the models are trained for
+# for evaluation, num_species should not be larger than the one the models are trained for
 
 python main.py --mode eval --num_species 20
 ```
