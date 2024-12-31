@@ -191,25 +191,26 @@ class MLTrain(MLClassification):
         """
 
         def objective(trial):
-
+            # Define the hyperparameters to be tuned for SVM
             params = {
-                "n_estimators": trial.suggest_int("n_estimators", 50, 200),
-                "max_depth": trial.suggest_int("max_depth", 3, 20),
-                "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
-                "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20)
-                }
+                "C": trial.suggest_loguniform("C", 1e-3, 1e3),
+                "kernel": trial.suggest_categorical("kernel", ["rbf", "sigmoid"]),
+                "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
+            }
 
+            # Create the base model using the suggested parameters
+            base_model = SVC(**params, random_state=42)
 
-            base_model = RandomForestClassifier(**params, random_state=42)
-
+            # Wrap the base model with Label Powerset
             model = LabelPowerset(classifier=base_model, require_dense=[False, True])
 
+            # Fit the model on the training data
             model.fit(self.X_train, self.Y_train)
 
+            # Predict on the test data
             preds = model.predict(self.X_test)
-            #print(soft_labels)
-            #preds = lco(soft_labels, self.Y_train)
 
+            # Calculate the F1 score (micro-averaged)
             f1 = f1_score(self.Y_test, preds, average="micro")
 
             return f1
@@ -226,7 +227,7 @@ class MLTrain(MLClassification):
             print("    {}: {}".format(key, value))
 
 
-        base_model = RandomForestClassifier(**best_trial.params, random_state=42)
+        base_model = SVC(**best_trial.params, random_state=42)
 
         model = LabelPowerset(classifier=base_model, require_dense=[False, True])
 

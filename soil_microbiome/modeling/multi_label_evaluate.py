@@ -48,6 +48,8 @@ class MLEvaluate(MLClassification):
 
             if method == "autogluon":
 
+                print(f">>>Evaluating model: autogluon...")
+
                 preds = self.autogluon_predict()
 
             else:
