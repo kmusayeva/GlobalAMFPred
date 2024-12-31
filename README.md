@@ -26,12 +26,14 @@ To train the models:
 
 ```
 # num_species is the number of top most frequent species
+
 python main.py --mode train --num_species 20
 ```
 
 To test the models:
 ```
 # for evaluation, num_species should not be larger than what the models are trained for
+
 python main.py --mode eval --num_species 20
 ```
 
