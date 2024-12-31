@@ -24,8 +24,8 @@ git clone https://github.com/kmusayeva/GlobalAMFPred
 
 To train the models:
 
-Specify the number of top most frequent species.
 ```
+# num_species is the number of top most frequent species
 python main.py --mode train --num_species 20
 ```
 
