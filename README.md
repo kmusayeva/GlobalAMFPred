@@ -6,11 +6,12 @@ See the [GlobalAMF.ipynb] for detailed analysis (still ongoing).
 
 Predictive models used are:
 
-1. Nearest-neighbour based approaches: Harmonic Function, (multi-label) k-nearest neighbour
-2. Tree-based methods: Random Forest, Gradient Boosting, LightGBM, XGBoost, CatBoost
-3. Margin classifier: Support-vector machines
-4. Multi-label learners: Ensembles of classifier chains (ecc, based on random forest), Label Powerset (lp, based on support vector machine)
-5. Auto ML, ensembles of methods/stacking: Autogluon
+1. Nearest-neighbour based approaches: (multi-label) k-nearest neighbour
+2. Label propagation: harmonic function
+3. Tree-based methods: random forest, gradient boosting, LightGBM, XGBoost, CatBoost
+4. Large-margin classifier: support-vector machines
+5. Multi-label learners: ensembles of classifier chains (ecc, based on random forest), label powerset (lp, based on support vector machine)
+6. Auto ML, ensembles of methods/stacking: Autogluon
 
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
 On the other hand, ecc and lp leverage label relationships.
