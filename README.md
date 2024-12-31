@@ -15,6 +15,7 @@ Predictive models used are:
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
 On the other hand, ecc and lp leverage label relationships.
 
+Harmonic function is a transductive learning method.
 
 
 ### Running instructions
