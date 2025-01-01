@@ -433,7 +433,6 @@ class MLTrain(MLClassification):
 
         preds = np.zeros_like(self.Y_test)
 
-        #optuna code
         def objective(trial):
             #hyperparams
             params = {
@@ -483,7 +482,6 @@ class MLTrain(MLClassification):
         dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
         dvalid = xgb.DMatrix(self.X_test, label=self.Y_test)
 
-        # optuna code
         def objective_fungi(trial):
             #hyperparams
             param = {
@@ -538,9 +536,8 @@ class MLTrain(MLClassification):
         Train support vector machine.
         """
 
-        preds = np.zeros_like(self.Y_test)
-
-        #optuna code
+        preds = np.zeros_like(self.Y_test) 
+        
         def objective(trial):
             #hyperparams
             params = {
