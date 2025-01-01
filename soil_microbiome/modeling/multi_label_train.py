@@ -26,17 +26,16 @@ import optuna
 
 class MLTrain(MLClassification):
     """
-    Performs multi-label classification based on Species object which contains
-    the environmental and species data.
-    The methods used are ensembles of classifier chains, label powerset, harmonic function, consistency method,
-    ml-knn, k-nn, gradient boosting, random forest, support vector machine, xgboost, lightgbm, autogluon.
+    Performs multi-label classification based on Species object 
+    which contains the environmental and species data.
+    The methods used are ensembles of classifier chains, label powerset, harmonic function, 
+    k-nn, ml-knn, support vector machine, random forest, gradient boosting, xgboost, lightgbm, autogluon.
     """
     def __init__(self, species: Species, cv: int = 5) -> None:
 
         super().__init__(species, cv)
 
-        # split data into train/test sets
-
+        # split data into train/test sets using stratified sampling
         stratifier = IterativeStratification(n_splits=2, order=5, sample_distribution_per_fold=[0.2, 0.8])
 
         self.train_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
@@ -52,18 +51,20 @@ class MLTrain(MLClassification):
 
     def train(self) -> None:
         """
-        Training all models specified in the parent class.
+        Train all models specified in the parent class.
         """
 
         for method in self.methods:
 
+            print("Training the model: autogluon")
+            
             if method=="autogluon": # treat autogluon separately
                 self.autogluon_train()
 
             else:
                 func_name = f"{method}_train"
 
-                print("Training model: ", self.methods_long[method])
+                print("Training the model: ", self.methods_long[method])
 
                 if hasattr(self, func_name):
 
@@ -73,7 +74,7 @@ class MLTrain(MLClassification):
 
                     print(f">>>>Done: {self.methods_long[method]}")
 
-                    file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
+                    file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl") 
 
                     print(f"Saving {func_name} to a file.")
 
@@ -89,11 +90,11 @@ class MLTrain(MLClassification):
 
     def ecc_train(self):
         """
-        Ensembles of classifier chains with random forest as base model.
+        Train ensembles of classifier chains with random forest as base model.
         """
 
         def objective(trial):
-
+            #hyperparams of random forest
             params = {
                 "n_estimators": trial.suggest_int("n_estimators", 50, 200),
                 "max_depth": trial.suggest_int("max_depth", 3, 20),
@@ -131,6 +132,56 @@ class MLTrain(MLClassification):
         model = EnsembleClassifierChains(base_estimator=base_model, n_chains=2, random_state=23)
 
         model.fit(self.X_train, self.Y_train)
+
+        return model
+
+    def lp_train(self):
+        """
+        Train label powerset with random forest as base model.
+        """
+
+        def objective(trial):
+            # hyperparams of svc
+            params = {
+                "C": trial.suggest_loguniform("C", 1e-3, 1e3),
+                "kernel": trial.suggest_categorical("kernel", ["rbf", "sigmoid"]),
+                "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
+            }
+
+            # Create the base model using the suggested parameters
+            base_model = SVC(**params, random_state=42)
+
+            # Wrap the base model with Label Powerset
+            model = LabelPowerset(classifier=base_model, require_dense=[False, True])
+
+            # Fit the model on the training data
+            model.fit(self.X_train, self.Y_train)
+
+            # Predict on the test data
+            preds = model.predict(self.X_test)
+
+            # Calculate the F1 score (micro-averaged)
+            f1 = f1_score(self.Y_test, preds, average="micro")
+
+            return f1
+
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=100, timeout=600)
+
+        best_trial = study.best_trial
+
+        print("  Value: {}".format(best_trial.value))
+        print("  Params: ")
+        for key, value in best_trial.params.items():
+            print("    {}: {}".format(key, value))
+
+
+        base_model = SVC(**best_trial.params, random_state=42)
+
+        model = LabelPowerset(classifier=base_model, require_dense=[False, True])
+
+        model.fit(self.X, self.Y)
 
         return model
 
@@ -182,63 +233,11 @@ class MLTrain(MLClassification):
         model.fit(self.X, self.Y)
 
         return model
-
-
-
-    def lp_train(self):
-        """
-        Train label powerset with random forest base model.
-        """
-
-        def objective(trial):
-            # Define the hyperparameters to be tuned for SVM
-            params = {
-                "C": trial.suggest_loguniform("C", 1e-3, 1e3),
-                "kernel": trial.suggest_categorical("kernel", ["rbf", "sigmoid"]),
-                "gamma": trial.suggest_categorical("gamma", ["scale", "auto"]),
-            }
-
-            # Create the base model using the suggested parameters
-            base_model = SVC(**params, random_state=42)
-
-            # Wrap the base model with Label Powerset
-            model = LabelPowerset(classifier=base_model, require_dense=[False, True])
-
-            # Fit the model on the training data
-            model.fit(self.X_train, self.Y_train)
-
-            # Predict on the test data
-            preds = model.predict(self.X_test)
-
-            # Calculate the F1 score (micro-averaged)
-            f1 = f1_score(self.Y_test, preds, average="micro")
-
-            return f1
-
-
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
-
-        best_trial = study.best_trial
-
-        print("  Value: {}".format(best_trial.value))
-        print("  Params: ")
-        for key, value in best_trial.params.items():
-            print("    {}: {}".format(key, value))
-
-
-        base_model = SVC(**best_trial.params, random_state=42)
-
-        model = LabelPowerset(classifier=base_model, require_dense=[False, True])
-
-        model.fit(self.X, self.Y)
-
-        return model
-
+    
 
     def mlknn_train(self):
         """
-        Train ml-knn.
+        Train ml-knn. 
         """
 
         def objective(trial):
@@ -300,7 +299,7 @@ class MLTrain(MLClassification):
 
             return f1
 
-
+        # only one hyperparam, so do grid search
         sampler = optuna.samplers.GridSampler(nn_grid)
         study = optuna.create_study(direction="maximize", sampler=sampler)
         study.optimize(objective, n_trials=len(nn_grid["nn"]))
@@ -332,7 +331,7 @@ class MLTrain(MLClassification):
         preds = np.zeros_like(self.Y_test)
 
         def objective(trial):
-
+            #hyperparams
             params = {
                 "n_estimators": trial.suggest_int("n_estimators", 50, 200),
                 "max_depth": trial.suggest_int("max_depth", 3, 20),
@@ -377,7 +376,7 @@ class MLTrain(MLClassification):
        """
 
        def objective(trial):
-
+            #hyperparams
             param = {
                 "objective": "binary",
                 "boosting_type": "gbdt",
@@ -427,8 +426,6 @@ class MLTrain(MLClassification):
        return models
 
 
-
-
     def gb_train(self):
         """
         Train gradient boosting.
@@ -436,8 +433,9 @@ class MLTrain(MLClassification):
 
         preds = np.zeros_like(self.Y_test)
 
+        #optuna code
         def objective(trial):
-
+            #hyperparams
             params = {
                 "n_estimators": trial.suggest_int("n_estimators", 50, 500),
                 "learning_rate": trial.suggest_float("learning_rate", 0.01, 1.0, log=True),
@@ -485,8 +483,9 @@ class MLTrain(MLClassification):
         dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
         dvalid = xgb.DMatrix(self.X_test, label=self.Y_test)
 
+        # optuna code
         def objective_fungi(trial):
-
+            #hyperparams
             param = {
                 "verbosity": 0,
                 "objective": "binary:logistic",
@@ -541,8 +540,9 @@ class MLTrain(MLClassification):
 
         preds = np.zeros_like(self.Y_test)
 
+        #optuna code
         def objective(trial):
-
+            #hyperparams
             params = {
                 "C": trial.suggest_float("C", 1e-3, 1e2),
                 "gamma": trial.suggest_float("gamma", 1e-4, 1e1, log=True)
@@ -584,7 +584,6 @@ class MLTrain(MLClassification):
         Train autogluon multi-label classifier.
         Trains for each label separately.
         """
-        print("here")
         df_train = pd.DataFrame(self.X_train, columns=self.X_column_names).join(pd.DataFrame(self.Y_train, columns=self.Y_column_names))
         df_test = pd.DataFrame(self.X_test, columns=self.X_column_names).join(pd.DataFrame(self.Y_test, columns=self.Y_column_names))
 
