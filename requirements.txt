@@ -1,4 +1,6 @@
+openpyxl
 osqp
 geopy
 scikit-multilearn
 optuna
+autogluon
