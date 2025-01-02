@@ -4,21 +4,13 @@ Email: khmusayeva@gmail.com
 """
 
 from .multi_label_classification import *
-from mlp.multi_label_propagation import *
 from .harmonic_function import *
 from .autogluon_multilabel_predictor import *
 from mlp.thresholding import *
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-from lightgbm import LGBMClassifier
-from sklearn.multioutput import ClassifierChain
-from skmultilearn.adapt import MLkNN
-from skmultilearn.problem_transform import LabelPowerset
-from skmultilearn.model_selection import iterative_train_test_split
-from skmultilearn.model_selection import IterativeStratification
-import pickle
 from joblib import load
+from autogluon.common.utils.log_utils import set_logger_verbosity
+
+set_logger_verbosity(3)
 
 
 class MLEvaluate(MLClassification):
@@ -149,7 +141,7 @@ class MLEvaluate(MLClassification):
             ):
                 continue
             label_model_path = os.path.join(root_model_dir, label_dir)
-            predictor = TabularPredictor.load(label_model_path)
+            predictor = TabularPredictor.load(label_model_path, verbosity=0)
             label_predictions = predictor.predict(test_data)
             all_predictions[label_dir] = label_predictions
 

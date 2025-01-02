@@ -1,4 +1,3 @@
-from mlp.multi_label_propagation import *
 from soil_microbiome.modeling import *
 import argparse
 
@@ -11,6 +10,7 @@ env_vars = global_vars["input_variables"]
 
 def main():
     parser = argparse.ArgumentParser(description="Train or evaluate a species model.")
+
     parser.add_argument(
         "--mode",
         type=str,
@@ -18,6 +18,7 @@ def main():
         choices=["train", "eval"],
         help="Mode to run: 'train' or 'eval'.",
     )
+
     parser.add_argument(
         "--num_species", type=int, required=True, help="Number of top frequent species."
     )
@@ -25,9 +26,9 @@ def main():
     parser.add_argument(
         "--method",
         type=str,
-        nargs='*',
+        nargs="*",
         required=False,
-        help="Name(s) of learning method(s)."
+        help="Name(s) of learning method(s).",
     )
 
     args = parser.parse_args()
@@ -51,6 +52,7 @@ def main():
             num_species_interest=args.num_species,
         )
         MLEvaluate(species, args.method).evaluate()
+
 
 if __name__ == "__main__":
     main()

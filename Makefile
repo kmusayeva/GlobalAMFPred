@@ -19,7 +19,7 @@ format:
 
 # Target to lint code using flake8 (assuming you have flake8 installed)
 lint:
-	flake8 .
+	flake8 -v --statistics --max-line-length=100 --disable-noqa .
 
 # Target to check types using mypy (assuming you have mypy installed)
 typecheck:

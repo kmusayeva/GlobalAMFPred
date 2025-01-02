@@ -4,3 +4,4 @@ geopy
 scikit-multilearn
 optuna
 autogluon
+joblib

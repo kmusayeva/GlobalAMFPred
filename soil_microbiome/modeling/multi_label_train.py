@@ -3,7 +3,6 @@ Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
 
-from .species import *
 from .multi_label_classification import *
 from .harmonic_function import *
 from .ensembles_cchains import *
@@ -13,7 +12,6 @@ from mlp.thresholding import *
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.multioutput import ClassifierChain
 from lightgbm import LGBMClassifier
 from skmultilearn.adapt import MLkNN
 import xgboost as xgb
@@ -32,7 +30,7 @@ class MLTrain(MLClassification):
     k-nn, ml-knn, support vector machine, random forest, gradient boosting, xgboost, lightgbm, autogluon.
     """
 
-    def __init__(self, species: Species, method: Optional[List[str]] = None) :
+    def __init__(self, species: Species, method: Optional[List[str]] = None):
 
         super().__init__(species, method)
 
@@ -217,7 +215,7 @@ class MLTrain(MLClassification):
 
             soft_labels = model.predict(X_dist_squared, self.train_idx, self.test_idx)
 
-            preds = basic(soft_labels, self.Y_train)
+            preds = cmn(soft_labels, self.Y_train)
 
             f1 = f1_score(self.Y_test, preds, average="micro")
 
@@ -289,7 +287,7 @@ class MLTrain(MLClassification):
         Train k-nearest neighbour.
         """
 
-        normalized_X = StandardScaler().fit_transform(self.X_train)
+        # normalized_X = StandardScaler().fit_transform(self.X_train)
 
         preds = np.zeros_like(self.Y_test)
 

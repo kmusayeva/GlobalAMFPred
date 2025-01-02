@@ -72,4 +72,5 @@ class MLClassification:
                 "lgbm",
                 "autogluon",
             ]
-        else: self.methods = method
+        else:
+            self.methods = method
