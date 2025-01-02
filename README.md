@@ -10,11 +10,11 @@ Predictive models used are:
 2. Label propagation: harmonic function
 3. Tree-based methods: random forest, gradient boosting, LightGBM, XGBoost, CatBoost
 4. Large-margin classifier: support-vector machines
-5. Multi-label learners: ensembles of classifier chains (ecc, based on random forest), label powerset (lp, based on support vector machine)
+5. Multi-label learners: ensembles of classifier chains (ecc), label powerset (lp)
 6. Auto ML, ensembles of methods/stacking: Autogluon
 
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
-On the other hand, ecc and lp leverage label relationships.
+On the other hand, ecc and lp leverage label relationships. They both are based on random forest classifier.
 
 Harmonic function is a transductive learning method.
 
