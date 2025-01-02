@@ -22,6 +22,14 @@ def main():
         "--num_species", type=int, required=True, help="Number of top frequent species."
     )
 
+    parser.add_argument(
+        "--method",
+        type=str,
+        nargs='*',
+        required=False,
+        help="Name(s) of learning method(s)."
+    )
+
     args = parser.parse_args()
 
     if args.mode == "train":
@@ -32,7 +40,7 @@ def main():
             tax_level=tax_level,
             num_species_interest=args.num_species,
         )
-        MLTrain(species).train()
+        MLTrain(species, args.method).train()
 
     elif args.mode == "eval":
         species = Species(
@@ -42,8 +50,7 @@ def main():
             tax_level=tax_level,
             num_species_interest=args.num_species,
         )
-        MLEvaluate(species).evaluate()
-
+        MLEvaluate(species, args.method).evaluate()
 
 if __name__ == "__main__":
     main()

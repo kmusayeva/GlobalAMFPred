@@ -23,9 +23,7 @@ class MLClassification:
     The evaluation metrics used are family of F1 metrics, hamming loss, and subset accuracy.
     """
 
-    def __init__(self, species: Species, cv: int = 5) -> None:
-
-        self.cv = cv
+    def __init__(self, species: Species, method: Optional[List[str]] = None):
 
         self.X = species.X.to_numpy()
 
@@ -61,15 +59,17 @@ class MLClassification:
             "lgbm": "lightgbm",
         }
 
-        self.methods = [
-            "knn",
-            "hf",
-            "svc",
-            "rf",
-            "gb",
-            "xgb",
-            "ecc",
-            "lp",
-            "lgbm",
-            "autogluon",
-        ]
+        if method is None:
+            self.methods = [
+                "knn",
+                "hf",
+                "svc",
+                "rf",
+                "gb",
+                "xgb",
+                "ecc",
+                "lp",
+                "lgbm",
+                "autogluon",
+            ]
+        else: self.methods = method

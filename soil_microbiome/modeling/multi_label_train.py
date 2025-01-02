@@ -26,15 +26,15 @@ import optuna
 
 class MLTrain(MLClassification):
     """
-    Performs multi-label classification based on Species object
-    which contains the environmental and species data.
+    Perform multi-label classification based on Species object
+    which contains the environmental (input) and species (output) data.
     The methods used are ensembles of classifier chains, label powerset, harmonic function,
     k-nn, ml-knn, support vector machine, random forest, gradient boosting, xgboost, lightgbm, autogluon.
     """
 
-    def __init__(self, species: Species, cv: int = 5) -> None:
+    def __init__(self, species: Species, method: Optional[List[str]] = None) :
 
-        super().__init__(species, cv)
+        super().__init__(species, method)
 
         # split data into train/test sets using stratified sampling
         stratifier = IterativeStratification(
@@ -58,9 +58,8 @@ class MLTrain(MLClassification):
 
         for method in self.methods:
 
-            print("Training the model: autogluon")
-
             if method == "autogluon":  # treat autogluon separately
+                print("Training the model: autogluon")
                 self.autogluon_train()
 
             else:
@@ -180,7 +179,7 @@ class MLTrain(MLClassification):
             return f1
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
+        study.optimize(objective, n_trials=150, timeout=600)
 
         best_trial = study.best_trial
 

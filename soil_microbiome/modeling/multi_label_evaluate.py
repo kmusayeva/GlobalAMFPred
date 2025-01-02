@@ -23,15 +23,15 @@ from joblib import load
 
 class MLEvaluate(MLClassification):
     """
-    Evaluation of trained models.
+    Evaluate trained models.
     The methods used are ensembles of classifier chains, label powerset, harmonic function,
     ml-knn, k-nn, gradient boosting, random forest, support vector machine,
     xgboost, lightgbm, autogluon.
     """
 
-    def __init__(self, species: Species) -> None:
+    def __init__(self, species: Species, method: Optional[List[str]] = None):
 
-        super().__init__(species)
+        super().__init__(species, method)
 
         self.result = pd.DataFrame(index=self.score_names, columns=self.methods)
 
