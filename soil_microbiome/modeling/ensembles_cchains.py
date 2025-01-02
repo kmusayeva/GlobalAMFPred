@@ -3,6 +3,7 @@ Implements ensemble of classifier chains of Read et al.  2011
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
+
 import numpy as np
 from sklearn.datasets import make_multilabel_classification
 from sklearn.model_selection import train_test_split
@@ -15,8 +16,9 @@ from sklearn.svm import SVC
 
 class EnsembleClassifierChains:
 
-    def __init__(self, base_estimator, n_chains: int = 5,
-                 random_state: int = None) -> None:
+    def __init__(
+        self, base_estimator, n_chains: int = 5, random_state: int = None
+    ) -> None:
         """
         @param base_estimator: random forest or support vector machine
         @param n_chains: size of the ensemble of classifier  chains
@@ -41,7 +43,9 @@ class EnsembleClassifierChains:
             self.label_orderings.append(label_order)
 
             # Initialize ClassifierChain with the base estimator and the current label order.
-            chain = ClassifierChain(self.base_estimator, order=label_order, random_state=rng)
+            chain = ClassifierChain(
+                self.base_estimator, order=label_order, random_state=rng
+            )
             chain.fit(X, Y)
             self.chains.append(chain)
 

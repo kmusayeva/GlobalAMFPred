@@ -3,8 +3,11 @@ Implements different thresholding strategies.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
+
 import numpy as np
-thresholds = [x/100.0 for x in range(1, 90, 1)]
+
+thresholds = [x / 100.0 for x in range(1, 90, 1)]
+
 
 def lco(preds, Y_train):
     """
@@ -15,13 +18,15 @@ def lco(preds, Y_train):
     A = correct_all_zero_rows(A, preds)
     return A
 
+
 def which_threshold(preds, Y_train):
     lcard = np.sum(Y_train) / Y_train.shape[0]
     nrow = preds.shape[0]
-    preds_lcard = [np.sum(preds >= thresholds[i])/nrow for i in range(len(thresholds))]
-    ind =  np.argmin(abs(lcard - preds_lcard))
+    preds_lcard = [
+        np.sum(preds >= thresholds[i]) / nrow for i in range(len(thresholds))
+    ]
+    ind = np.argmin(abs(lcard - preds_lcard))
     return thresholds[ind]
-
 
 
 def cmn(preds, Y_train):
@@ -35,10 +40,14 @@ def cmn(preds, Y_train):
     for j in range(ncol):
         class_j = preds[:, j]
         fuc = nrow - fu[j]
-        A[:, j] = np.sign(((Y_train_p[j] * class_j) / fu[j]) - (1 - Y_train_p[j]) * ((1 - class_j) / fuc))
-    A[A == -1.] = 0
+        A[:, j] = np.sign(
+            ((Y_train_p[j] * class_j) / fu[j])
+            - (1 - Y_train_p[j]) * ((1 - class_j) / fuc)
+        )
+    A[A == -1.0] = 0
     A = correct_all_zero_rows(A, preds)
     return A
+
 
 ### thresholding at 0
 def atzero(preds, Y_train=None):
@@ -54,6 +63,7 @@ def basic(preds, Y_train=None):
     A = np.where(preds >= 0.5, 1, 0)
     A = correct_all_zero_rows(A, preds)
     return A
+
 
 def correct_all_zero_rows(A, preds):
     """

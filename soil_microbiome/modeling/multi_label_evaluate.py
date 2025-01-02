@@ -28,6 +28,7 @@ class MLEvaluate(MLClassification):
     ml-knn, k-nn, gradient boosting, random forest, support vector machine,
     xgboost, lightgbm, autogluon.
     """
+
     def __init__(self, species: Species) -> None:
 
         super().__init__(species)
@@ -37,7 +38,6 @@ class MLEvaluate(MLClassification):
         self.X_column_names = species.X.columns.tolist()
 
         self.Y_column_names = species.Y_top.columns.tolist()
-
 
     def evaluate(self) -> None:
         """
@@ -54,7 +54,7 @@ class MLEvaluate(MLClassification):
 
             else:
 
-                file_name = os.path.join(global_vars['model_dir'], f"{method}.pkl")
+                file_name = os.path.join(global_vars["model_dir"], f"{method}.pkl")
 
                 model = load(file_name)
 
@@ -62,7 +62,8 @@ class MLEvaluate(MLClassification):
 
                 if method in ["ecc", "lp", "xgb", "mlknn"]:
                     preds = self.multi_label_predict(model)
-                    if method == "ecc": preds = np.rint(preds)
+                    if method == "ecc":
+                        preds = np.rint(preds)
 
                 elif method in ["knn", "rf", "gb", "svc", "lgbm"]:
                     preds = self.binary_relevance_predict(model)
@@ -70,15 +71,14 @@ class MLEvaluate(MLClassification):
                 elif method == "hf":
                     preds = self.hf_predict(model)
 
-            preds = preds[:, :self.num_species]
+            preds = preds[:, : self.num_species]
 
             for metric, scoring_func, kwargs in self.scores:
-                self.result.loc[metric, method] = round(scoring_func(self.Y, preds, **kwargs), 3)
-
+                self.result.loc[metric, method] = round(
+                    scoring_func(self.Y, preds, **kwargs), 3
+                )
 
         print(f">>>Results: \n{self.result.to_string()}")
-
-
 
     def multi_label_predict(self, model) -> np.ndarray:
         """
@@ -89,7 +89,6 @@ class MLEvaluate(MLClassification):
         preds = model.predict(self.X)
 
         return preds
-
 
     def binary_relevance_predict(self, models) -> np.ndarray:
         """
@@ -104,7 +103,6 @@ class MLEvaluate(MLClassification):
 
         return preds
 
-
     def hf_predict(self, model) -> np.ndarray:
         """
         Predict with harmonic function.
@@ -117,7 +115,7 @@ class MLEvaluate(MLClassification):
         dist_matrix_squared = dist_matrix(X) ** 2
 
         # Get the indices for training and test data
-        u = len(X)-len(self.X)
+        u = len(X) - len(self.X)
 
         train_indices = range(u)
 
@@ -130,29 +128,34 @@ class MLEvaluate(MLClassification):
 
         return preds
 
-
     def autogluon_predict(self):
         """
         Prediction using autogluon for each label separately.
         """
 
-        root_model_dir = os.path.join(global_vars['model_dir'], "autogluon")
+        root_model_dir = os.path.join(global_vars["model_dir"], "autogluon")
 
-        test_data = pd.DataFrame(self.X, columns=self.X_column_names)\
-               .join(pd.DataFrame(self.Y, columns=self.Y_column_names))
+        test_data = pd.DataFrame(self.X, columns=self.X_column_names).join(
+            pd.DataFrame(self.Y, columns=self.Y_column_names)
+        )
 
         # Initialize an empty DataFrame to store predictions
         all_predictions = pd.DataFrame()
 
         # Iterate over each label-specific model directory
         for label_dir in os.listdir(root_model_dir):
-            if label_dir=="multilabel_predictor.pkl": continue
+            if (label_dir == "multilabel_predictor.pkl") or not (
+                "_".join(label_dir.split("_")[1:]) in self.species_names
+            ):
+                continue
             label_model_path = os.path.join(root_model_dir, label_dir)
             predictor = TabularPredictor.load(label_model_path)
             label_predictions = predictor.predict(test_data)
             all_predictions[label_dir] = label_predictions
 
-        new_names = ["_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()]
+        new_names = [
+            "_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()
+        ]
 
         all_predictions.columns = new_names
 

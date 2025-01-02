@@ -6,6 +6,7 @@ Email: khmusayeva@gmail.com
 import numpy as np
 from mlp.multi_label_propagation import *
 
+
 class HarmonicFunction:
     def __init__(self, sigma: float, nn: int, iters: int = None):
         """
@@ -21,41 +22,42 @@ class HarmonicFunction:
         self.X = None
         self.Y_train = None
 
-
     def fit(self, X: np.ndarray, Y_train: np.ndarray):
         """
         @param: dist_matrix_squared (np.ndarray): Precomputed Euclidean distance matrix.
         @param: Y_train (np.ndarray): Training labels or response matrix.
         """
-        
-        #if self.dist_matrix_squared is None or self.Y_train is None or self.train_indices is None:
+
+        # if self.dist_matrix_squared is None or self.Y_train is None or self.train_indices is None:
         #    raise ValueError("The model is not fitted yet. Call 'fit' with training data first.")
 
         self.X = X
         self.Y_train = Y_train
-        
 
-
-
-    def predict(self, dist_matrix_squared: np.ndarray, train_indices:np.ndarray, test_indices: np.ndarray) -> np.ndarray:
+    def predict(
+        self,
+        dist_matrix_squared: np.ndarray,
+        train_indices: np.ndarray,
+        test_indices: np.ndarray,
+    ) -> np.ndarray:
         """
         @param dist_matrix_squared: squared distance matrix of the whole input matrix
         @param train_indices: indices of the training data
         @param test_indices: indices of the test data
         @return: a matrix of soft labels
         """
-        
+
         transition_matrix = transition_matrix_gaussian(
             dist_matrix_squared,
             label=train_indices,
             sigma=self.sigma,
             nn=self.nn,
-            row_norm=False
-                    )
+            row_norm=False,
+        )
 
         P_UL = transition_matrix[np.ix_(test_indices, train_indices)]
         P_UU = transition_matrix[np.ix_(test_indices, test_indices)]
-    
+
         u = len(test_indices)
         I = np.eye(len(P_UU))
 

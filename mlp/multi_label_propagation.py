@@ -3,12 +3,20 @@ Implements label-propagation methods.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
+
 from .propagation_matrices import *
 from .thresholding import *
 
 
-def hf(dist_matrix_squared: np.ndarray, Y_train: np.ndarray, train_indices: np.ndarray, test_indices: np.ndarray, nn: int,
-       sigma: float, iters=None):
+def hf(
+    dist_matrix_squared: np.ndarray,
+    Y_train: np.ndarray,
+    train_indices: np.ndarray,
+    test_indices: np.ndarray,
+    nn: int,
+    sigma: float,
+    iters=None,
+):
     """
     Harmonic function and iterative label propagation
     @param dist_matrix_squared: Euclidean distance matrix of input data
@@ -20,8 +28,9 @@ def hf(dist_matrix_squared: np.ndarray, Y_train: np.ndarray, train_indices: np.n
     @param iters: number of iterations for iterative label propagation
     @return: np.ndarray, of soft labels
     """
-    transition_matrix = transition_matrix_gaussian(dist_matrix_squared, label=train_indices, sigma=sigma, nn=nn,
-                                                   row_norm=False)
+    transition_matrix = transition_matrix_gaussian(
+        dist_matrix_squared, label=train_indices, sigma=sigma, nn=nn, row_norm=False
+    )
     u = len(test_indices)
     P_UL = transition_matrix[np.ix_(test_indices, train_indices)]
     P_UU = transition_matrix[np.ix_(test_indices, test_indices)]
@@ -40,7 +49,13 @@ def hf(dist_matrix_squared: np.ndarray, Y_train: np.ndarray, train_indices: np.n
     return soft_labels.round(3)
 
 
-def cm(dist_matrix_squared: np.ndarray, Y: np.ndarray, train_indices: np.ndarray, sigma: float, reg: float):
+def cm(
+    dist_matrix_squared: np.ndarray,
+    Y: np.ndarray,
+    train_indices: np.ndarray,
+    sigma: float,
+    reg: float,
+):
     """
     Implements consistency method (CM) of Zhou et al., 2004
     @param dist_matrix_squared: Euclidean distance matrix of input data
@@ -50,12 +65,21 @@ def cm(dist_matrix_squared: np.ndarray, Y: np.ndarray, train_indices: np.ndarray
     @param reg: regularization parameter in (0,1)
     @return: np.ndarray, of soft labels
     """
-    transition_matrix = propagation_matrix_normalized_Laplacian(dist_matrix_squared, sigma)
+    transition_matrix = propagation_matrix_normalized_Laplacian(
+        dist_matrix_squared, sigma
+    )
     soft_labels = regularized_approach(Y.copy(), train_indices, transition_matrix, reg)
     return soft_labels
 
 
-def lln(X: np.ndarray, dist_matrix_squared: np.ndarray, Y: np.ndarray, train_indices: np.ndarray, nn: int, reg: float):
+def lln(
+    X: np.ndarray,
+    dist_matrix_squared: np.ndarray,
+    Y: np.ndarray,
+    train_indices: np.ndarray,
+    nn: int,
+    reg: float,
+):
     """
     locally linear neighbourhood (LLN) of Wang and Zang, 2008
     @param dist_matrix_squared: Euclidean distance matrix of input data
@@ -70,7 +94,9 @@ def lln(X: np.ndarray, dist_matrix_squared: np.ndarray, Y: np.ndarray, train_ind
     return regularized_approach(Y_prime, train_indices, transition_matrix, reg)
 
 
-def regularized_approach(Y: np.ndarray, label: np.ndarray, transition_matrix: np.ndarray, reg: float):
+def regularized_approach(
+    Y: np.ndarray, label: np.ndarray, transition_matrix: np.ndarray, reg: float
+):
     """
     common part to the regularized approaches, CM and LLN
     @param Y: response matrix

@@ -2,6 +2,7 @@
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
+
 import os.path
 import sys
 from sklearn.preprocessing import MinMaxScaler
@@ -15,15 +16,17 @@ class Species:
     """
     Creates species class from the species dataset (the path should be set in the global_vars).
     """
-    def __init__(self,
-                file_name: str,
-                x_dim: int, 
-                env_vars: Optional[List[str]] = None,
-                tax_level: Optional[str] = "species",  
-                num_species_interest: Optional[int] = None,                 
-                species_pattern: Optional[List[str]] = None,
-                species: Optional[List[str]] = None) -> None:
 
+    def __init__(
+        self,
+        file_name: str,
+        x_dim: int,
+        env_vars: Optional[List[str]] = None,
+        tax_level: Optional[str] = "species",
+        num_species_interest: Optional[int] = None,
+        species_pattern: Optional[List[str]] = None,
+        species: Optional[List[str]] = None,
+    ) -> None:
         """
         Initialize Species object with X as environmental variables, Y abundancy matrix,
         Yb absence/presence matrix, Y_top top most frequent species.
@@ -45,34 +48,33 @@ class Species:
         if species is not None:
             self.Y = self.Y[species]
         if species_pattern is not None:
-            pattern = '|'.join(species_pattern)
+            pattern = "|".join(species_pattern)
             self.Y = self.Y.loc[:, self.Y.columns.str.contains(pattern)]
         self.Yb = self.Y.where(self.Y == 0, 1)
         self.freq = ((self.Yb.sum().sort_values() * 100 / len(self.Y)).round(2))[::-1]
         self.Yb_sorted = self.Yb.sort_index(axis=1)
         self.Y_top = self.Yb
         self.num_species_interest = None
-        
-        if num_species_interest is not None: 
+
+        if num_species_interest is not None:
             self.get_top_species(num_species_interest)
         else:
-             self.label_distri = self.label_info()
-
+            self.label_distri = self.label_info()
 
     def __read_data(self, file_name) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Read data from the specified file and return environmental variables and species data.
-        @return: input, output data frames 
+        @return: input, output data frames
         """
-        data_path = os.path.join(global_vars['data_dir'], file_name)
+        data_path = os.path.join(global_vars["data_dir"], file_name)
         try:
             data = read_file(data_path)
         except ValueError as err:
             print(f"Error in reading file {data_path}: {err}")
             sys.exit(1)
         if self.env_vars is None:
-            self.env_vars = data.columns.tolist()[:self.x_dim]
-        return data[self.env_vars], data.iloc[:, self.x_dim:]
+            self.env_vars = data.columns.tolist()[: self.x_dim]
+        return data[self.env_vars], data.iloc[:, self.x_dim :]
 
     def label_info(self) -> Dict[str, float]:
         """
@@ -81,15 +83,18 @@ class Species:
         n, c = self.Y_top.shape
         col_sum = np.sum(self.Y_top.to_numpy(), axis=0)
         row_sum = np.sum(self.Y_top.to_numpy())
-        imbalance_ratios = np.maximum(col_sum, n - col_sum) / np.minimum(col_sum, n - col_sum)
+        imbalance_ratios = np.maximum(col_sum, n - col_sum) / np.minimum(
+            col_sum, n - col_sum
+        )
         unique_rows, counts = np.unique(self.Y_top, axis=0, return_counts=True)
-        info = {'Number of unique labelsets (ls)': len(unique_rows),
-                'Label density': (row_sum / (n * c)).round(2),
-                'Class imbalance': np.mean(imbalance_ratios).round(2),
-                'Max example per ls': counts.max(),
-                'Mean example per ls': counts.mean().round(0),
-                'Min example per ls': counts.min()
-                }
+        info = {
+            "Number of unique labelsets (ls)": len(unique_rows),
+            "Label density": (row_sum / (n * c)).round(2),
+            "Class imbalance": np.mean(imbalance_ratios).round(2),
+            "Max example per ls": counts.max(),
+            "Mean example per ls": counts.mean().round(0),
+            "Min example per ls": counts.min(),
+        }
         return info
 
     def standardize_env_vars(self, v: Optional[List[str]] = None) -> None:
@@ -109,8 +114,10 @@ class Species:
         else:
             self.X[v] = MinMaxScaler().fit_transform(self.X[v])
 
-    def get_top_species(self, num_top: int, exclude_first_n: Optional[int] = None) -> None:
-        """ 
+    def get_top_species(
+        self, num_top: int, exclude_first_n: Optional[int] = None
+    ) -> None:
+        """
         Select top most frequent species. Update label distribution information for these species.
         @param num_top: number of top frequent species
         @param exclude_first_n: to exclude highly frequent species
@@ -118,25 +125,27 @@ class Species:
         if exclude_first_n is None:
             exclude_first_n = 0
         if num_top > self.Y.shape[1] or exclude_first_n > num_top:
-            raise ValueError('Start and end values are not correct.')
+            raise ValueError("Start and end values are not correct.")
         self.freq = self.freq[exclude_first_n:num_top]
         cols = self.freq.index.tolist()
         self.num_species_interest = num_top
         self.Y_top = self.Yb[cols]
         self.label_distri = self.label_info()
 
-    def plot_freq(self, save_plot: Optional[bool] = False, name: Optional[str] = None) -> None:
+    def plot_freq(
+        self, save_plot: Optional[bool] = False, name: Optional[str] = None
+    ) -> None:
         """
         Plots and saves barplots of species frequencies.
         @param name: name of the file to save to
         @param save_plot: show plot
         """
-        self.freq.plot.barh(x='Relative frequency', y="Species", rot=0)
+        self.freq.plot.barh(x="Relative frequency", y="Species", rot=0)
         plt.tight_layout()
         if save_plot:
             if not name:
-                raise ValueError('Please specify the name of the figure.')
-            plt.savefig(f"../figures/{name}.png", dpi=300, bbox_inches='tight')
+                raise ValueError("Please specify the name of the figure.")
+            plt.savefig(f"../figures/{name}.png", dpi=300, bbox_inches="tight")
         plt.show()
 
     def plot_hist_env_vars_species(self, param: str, eps: float) -> None:
@@ -150,11 +159,18 @@ class Species:
         for sp in self.Y_top.columns.tolist():
             ind = self.Y_top[sp] > 0
             pr2 = self.X[ind][param]
-            plt.hist(pr1, bins=np.arange(min(pr1), max(pr1) + eps, eps), alpha=0.5, label='All ' + param)
-            plt.hist(pr2, bins=np.arange(min(pr1), max(pr1) + eps, eps), alpha=0.5, label=sp)
-            plt.legend(loc='upper left')
+            plt.hist(
+                pr1,
+                bins=np.arange(min(pr1), max(pr1) + eps, eps),
+                alpha=0.5,
+                label="All " + param,
+            )
+            plt.hist(
+                pr2, bins=np.arange(min(pr1), max(pr1) + eps, eps), alpha=0.5, label=sp
+            )
+            plt.legend(loc="upper left")
             plt.xlabel(param)
-            plt.savefig('../figures/' + param + ' ' + sp)
+            plt.savefig("../figures/" + param + " " + sp)
             plt.clf()
 
     def plot_hist_env_vars(self, param: str, eps: float, prefix: str) -> None:
@@ -165,10 +181,12 @@ class Species:
         @param prefix: used in the name of the plot
         """
         pr1 = self.X[param]
-        plt.hist(pr1, bins=np.arange(min(pr1), max(pr1) + eps, eps), alpha=0.5, label=prefix)
-        plt.legend(loc='upper left', frameon=False)
+        plt.hist(
+            pr1, bins=np.arange(min(pr1), max(pr1) + eps, eps), alpha=0.5, label=prefix
+        )
+        plt.legend(loc="upper left", frameon=False)
         plt.xlabel(param)
-        plt.savefig(f'../figures/{prefix}{param}.png')
+        plt.savefig(f"../figures/{prefix}{param}.png")
 
     def plot_ph_heatmap(self, plot_name: str) -> None:
         """
@@ -176,8 +194,16 @@ class Species:
         PLots the distribution of species in each group of acidity.
         @param plot_name: the name of the plot
         """
-        bins = [0, 4.5, 5.5, 6.5, 7.5, 8.5, float('inf')]  # float('inf') covers all pH greater than 8.5
-        labels = ['<4.5', '4.5-5.5', '5.5-6.5', '6.5-7.5', '7.5-8.5', '>8.5']
+        bins = [
+            0,
+            4.5,
+            5.5,
+            6.5,
+            7.5,
+            8.5,
+            float("inf"),
+        ]  # float('inf') covers all pH greater than 8.5
+        labels = ["<4.5", "4.5-5.5", "5.5-6.5", "6.5-7.5", "7.5-8.5", ">8.5"]
         # labels = ['very acidic', 'a little acidic', 'acidic', 'neutral', 'basic', 'very basic']
         ph_levels = pd.cut(self.X["pH"], bins=bins, labels=labels, include_lowest=True)
         # (self.Yb.groupby(ph_levels).sum()).to_excel(os.path.join(global_vars["data_dir"], "richness.xlsx"))
@@ -186,15 +212,15 @@ class Species:
         richness["pH"] = richness.index
         # richness.set_index('pH')
         plt.figure(figsize=(15, 10))
-        ax = sns.heatmap(richness.set_index('pH'), cmap='viridis', annot=True, fmt="d")
+        ax = sns.heatmap(richness.set_index("pH"), cmap="viridis", annot=True, fmt="d")
         # plt.title('Heatmap of Species Count Across Different pH Levels', fontsize=20)
-        plt.xlabel('Species', fontsize=14)
-        plt.ylabel('pH Levels', fontsize=14)
-        plt.xticks(rotation=45, fontsize=12, ha='right')
+        plt.xlabel("Species", fontsize=14)
+        plt.ylabel("pH Levels", fontsize=14)
+        plt.xticks(rotation=45, fontsize=12, ha="right")
         plt.yticks(rotation=0, fontsize=12)
         ax.invert_yaxis()
         plt.tight_layout()
-        plt.savefig('../figures/' + plot_name + '.png')
+        plt.savefig("../figures/" + plot_name + ".png")
         # plt.show()
         # print(self.Yb.groupby(ph_levels).sum())
         print(self.X["pH"].groupby(ph_levels).count())
@@ -204,5 +230,7 @@ class Species:
         Prints out label distribution.
         """
         print(f">>>Relative frequencies (%) of top species: \n{self.freq.to_string()}")
-        print(f">>>The number of examples is {self.X.shape[0]} and the number of labels is {self.Y.shape[1]}.")
-        print('\n'.join(f"{key}: {value}" for key, value in self.label_distri.items()))
+        print(
+            f">>>The number of examples is {self.X.shape[0]} and the number of labels is {self.Y.shape[1]}."
+        )
+        print("\n".join(f"{key}: {value}" for key, value in self.label_distri.items()))

@@ -29,7 +29,7 @@ def check_extension(filename, extension):
         # Add the extension to the filename
         filename += extension
 
-    file = os.path.join(global_vars['data_dir'], filename)
+    file = os.path.join(global_vars["data_dir"], filename)
 
     return file
 
@@ -37,15 +37,15 @@ def check_extension(filename, extension):
 def read_file(filename):
     name, ext = os.path.splitext(filename)
 
-    if ext not in ['.xlsx', '.csv']:
-        raise ValueError('Please specify either xlsx or csv file.')
+    if ext not in [".xlsx", ".csv"]:
+        raise ValueError("Please specify either xlsx or csv file.")
 
-    full_path = os.path.join(global_vars['data_dir'], filename)
+    full_path = os.path.join(global_vars["data_dir"], filename)
 
     if not os.path.isfile(full_path):
-        raise ValueError('File does not exist.')
+        raise ValueError("File does not exist.")
 
-    if ext == '.xlsx':
+    if ext == ".xlsx":
         data = pd.read_excel(full_path)
 
     else:
@@ -61,7 +61,7 @@ def timeit(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         total_time = end_time - start_time
-        print(f'{func.__name__} : {total_time:.4f} seconds')
+        print(f"{func.__name__} : {total_time:.4f} seconds")
         return result
 
     return timeit_wrapper
@@ -71,29 +71,41 @@ def haversine(coord1, coord2):
     return great_circle(coord1, coord2).km
 
 
-
-
 def iterative_data_split(species):
 
     # create three subsets of data for training, validation and testing, with proportions 60%/20%/20%.
 
     num_species = species.Y_top.shape[1]
 
-    if num_species < 10: order = num_species
-    else: order = 20
+    if num_species < 10:
+        order = num_species
+    else:
+        order = 20
 
-    stratifier = IterativeStratification(n_splits=2, order=order, sample_distribution_per_fold=[0.2, 0.8])
+    stratifier = IterativeStratification(
+        n_splits=2, order=order, sample_distribution_per_fold=[0.2, 0.8]
+    )
 
     train_valid_idx, test_idx = next(stratifier.split(species.X, species.Y_top))
 
-    X_train_valid, Y_train_valid = species.X.iloc[train_valid_idx], species.Y_top.iloc[train_valid_idx]
+    X_train_valid, Y_train_valid = (
+        species.X.iloc[train_valid_idx],
+        species.Y_top.iloc[train_valid_idx],
+    )
 
     Y_test = species.Y_top.iloc[test_idx]
     X_test = species.X.iloc[test_idx]
 
-    df_train = pd.DataFrame(X_train_valid, columns=species.X.columns).join(pd.DataFrame(Y_train_valid, columns=species.Y_top.columns))
-    df_test = pd.DataFrame(X_test, columns=species.X.columns).join(pd.DataFrame(Y_test, columns=species.Y_top.columns))
+    df_train = pd.DataFrame(X_train_valid, columns=species.X.columns).join(
+        pd.DataFrame(Y_train_valid, columns=species.Y_top.columns)
+    )
+    df_test = pd.DataFrame(X_test, columns=species.X.columns).join(
+        pd.DataFrame(Y_test, columns=species.Y_top.columns)
+    )
 
-
-    df_train.to_excel(os.path.join(global_vars["data_dir"], "species_train.xlsx"), index=False)
-    df_test.to_excel(os.path.join(global_vars["data_dir"], "species_test.xlsx"), index=False)
+    df_train.to_excel(
+        os.path.join(global_vars["data_dir"], "species_train.xlsx"), index=False
+    )
+    df_test.to_excel(
+        os.path.join(global_vars["data_dir"], "species_test.xlsx"), index=False
+    )

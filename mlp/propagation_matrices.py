@@ -3,12 +3,13 @@ Creates propagation matrices.
 Author: Khadija Musayeva
 Email: khmusayeva@gmail.com
 """
+
 import numpy as np
 import pandas as pd
 import scipy as sc
 import osqp
 from sklearn.preprocessing import MinMaxScaler
-from sklearn .preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics.pairwise import pairwise_distances
 
 
@@ -25,7 +26,9 @@ def Laplacian_matrix(dist_matrix_squared: np.ndarray, sigma: float):
     return np.subtract(D, W)
 
 
-def propagation_matrix_normalized_Laplacian(dist_matrix_squared: np.ndarray, sigma: float):
+def propagation_matrix_normalized_Laplacian(
+    dist_matrix_squared: np.ndarray, sigma: float
+):
     """
     Computes normalized Laplacian matrix.
     @param dist_matrix_squared: squared Euclidean distance matrix
@@ -39,7 +42,9 @@ def propagation_matrix_normalized_Laplacian(dist_matrix_squared: np.ndarray, sig
     return (D.dot(P).dot(D)).round(3)
 
 
-def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=False)->np.ndarray:
+def transition_matrix_gaussian(
+    dist_matrix_squared, label, sigma, nn, row_norm=False
+) -> np.ndarray:
     """
     Computes transition matrix based on the Gaussian kernel.
     @param dist_matrix_squared:
@@ -65,7 +70,7 @@ def transition_matrix_gaussian(dist_matrix_squared, label, sigma, nn, row_norm=F
     return column_row_normalize(P_prime)
 
 
-def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
+def transition_matrix_linear_patch(X, dist_matrix, nn) -> np.ndarray:
     """
     Implements the propagation matrix of Wang and Zang, 2008.
     @param X: input data
@@ -81,7 +86,7 @@ def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
     u = np.ones(nn + 1)
     W = np.zeros((n, n))
     for i in range(n):
-        neighbours = nn_matrix[i, 1:nn + 1]
+        neighbours = nn_matrix[i, 1 : nn + 1]
         X_neighbours = X[neighbours, :]
         # X_neighbours_matrix = X_neighbours
         Z = X_neighbours - X[i, :]
@@ -89,8 +94,19 @@ def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
         P = sc.sparse.csc_matrix(2 * G)
         prob = osqp.OSQP()
         # Setup workspace and change alpha parameter
-        prob.setup(P, q, A, l, u, alpha=1.0, verbose=False, eps_abs=1e-10, eps_rel=1e-10, eps_prim_inf=1e-10,
-                   eps_dual_inf=1e-10)
+        prob.setup(
+            P,
+            q,
+            A,
+            l,
+            u,
+            alpha=1.0,
+            verbose=False,
+            eps_abs=1e-10,
+            eps_rel=1e-10,
+            eps_prim_inf=1e-10,
+            eps_dual_inf=1e-10,
+        )
 
         # Solve problem
         res = prob.solve()
@@ -98,7 +114,7 @@ def transition_matrix_linear_patch(X, dist_matrix, nn)->np.ndarray:
     return W
 
 
-def chi_square_transform(Y)->np.ndarray:
+def chi_square_transform(Y) -> np.ndarray:
     """
     Computes the chi-square transformation of the label matrix.
     @param Y: label matrix
@@ -113,14 +129,14 @@ def chi_square_transform(Y)->np.ndarray:
     return Y_chi_square
 
 
-def dist_matrix(X)->np.ndarray:
+def dist_matrix(X) -> np.ndarray:
     """
     Computes the euclidean distance between all rows in X.
     @param X: input data
     @return: distance matrix
     """
     normalized_X = StandardScaler().fit_transform(X)
-    distance_matrix = pairwise_distances(normalized_X, metric='euclidean')
+    distance_matrix = pairwise_distances(normalized_X, metric="euclidean")
     return distance_matrix
 
 
@@ -129,10 +145,10 @@ def similarity_matrix(dist_matrix_squared, sigma, diagonal=False):
     Computes the similarity matrix based on the given distance matrix.
     @param dist_matrix_squared: Euclidean distance matrix
     @param sigma: length-scale parameter of the Gaussian kernel
-    @param diagonal: diagonal elements are kept if set to True 
+    @param diagonal: diagonal elements are kept if set to True
     @return: similarity matrix
     """
-    W = np.exp(-dist_matrix_squared / sigma ** 2)
+    W = np.exp(-dist_matrix_squared / sigma**2)
     if diagonal is False:
         np.fill_diagonal(W, 0)
     return W

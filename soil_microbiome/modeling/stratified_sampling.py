@@ -9,7 +9,9 @@ import numpy as np
 from typing import List, Tuple, Dict, Optional, Union
 
 
-def iterative_stratification(Y: np.ndarray, k: int, proportions: List[float]) -> List[np.ndarray]:
+def iterative_stratification(
+    Y: np.ndarray, k: int, proportions: List[float]
+) -> List[np.ndarray]:
     """
     Perform stratified sampling based on the response matrix Y, returning k disjoint subsets of indices.
     @param Y: A binary response matrix of shape (n_samples, n_labels).
@@ -29,16 +31,22 @@ def iterative_stratification(Y: np.ndarray, k: int, proportions: List[float]) ->
     undistributed_labels = set(range(n_labels))
     while undistributed_labels:
         # Dynamically determine label order based on current distribution of undistributed labels
-        label_frequencies = {label: Y[list(D), label].sum() for label in undistributed_labels}
+        label_frequencies = {
+            label: Y[list(D), label].sum() for label in undistributed_labels
+        }
         # Order labels by their frequency, rare ones first
         label_order = sorted(label_frequencies, key=label_frequencies.get)
         i = label_order[0]  # For each label, distribute its indices across the subsets
         Di = [idx for idx in D if Y[idx, i] == 1]  # Indices with the i-th label
-        cij = [round(len(Di) * prop) for prop in proportions]  # Desired count per subset for this label
+        cij = [
+            round(len(Di) * prop) for prop in proportions
+        ]  # Desired count per subset for this label
         for idx in Di:
             # Choose the subset for this index
             subset_sizes = [len(subsets[j]) for j in range(k)]
-            subset_deficits = [c[j] - subset_sizes[j] for j in range(k)]  # Remaining capacity in each subset
+            subset_deficits = [
+                c[j] - subset_sizes[j] for j in range(k)
+            ]  # Remaining capacity in each subset
             # Prioritize subsets with the largest deficit, then by their original capacity
             priorities = sorted(range(k), key=lambda x: (-cij[x], -subset_deficits[x]))
             # print(f"priorities: {priorities}")
