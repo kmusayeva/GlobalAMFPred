@@ -484,7 +484,7 @@ class MLTrain(MLClassification):
         dtrain = xgb.DMatrix(self.X_train, label=self.Y_train)
         dvalid = xgb.DMatrix(self.X_test, label=self.Y_test)
 
-        def objective_fungi(trial):
+        def objective(trial):
             # hyperparams
             param = {
                 "verbosity": 0,
@@ -527,7 +527,7 @@ class MLTrain(MLClassification):
             return f1
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective_fungi, n_trials=100, timeout=600)
+        study.optimize(objective, n_trials=100, timeout=600)
 
         best_trial = study.best_trial
         print("  Value: {}".format(best_trial.value))
