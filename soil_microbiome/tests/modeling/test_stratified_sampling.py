@@ -1,12 +1,9 @@
-import pytest
-import numpy as np
 import os
 import sys
 
-sys.path.append("..")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from soil_microbiome.data_analysis.stratified_sampling import *
-
+from soil_microbiome.modeling.stratified_sampling import *
 
 def test_iterative_stratification():
     # Setup any required inputs for the function
@@ -51,5 +48,3 @@ def test_iterative_stratification():
     assert result == expected_result, "There are common indices in train and test sets."
 
 
-if __name__ == "__main__":
-    test_iterative_stratification()

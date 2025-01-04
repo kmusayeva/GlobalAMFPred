@@ -30,7 +30,7 @@ class Species:
         """
         Initialize Species object with X as environmental variables, Y abundancy matrix,
         Yb absence/presence matrix, Y_top top most frequent species.
-        Calculate the label ditrbution, class imbalance information.
+        Calculate the label ditribution, class imbalance information.
         @param file_name: file name to read the data from
         @param x_dim: total number of variables in input data
         @param tax_level: taxonomic level: order, family, genus, or species
@@ -86,9 +86,10 @@ class Species:
         imbalance_ratios = np.maximum(col_sum, n - col_sum) / np.minimum(
             col_sum, n - col_sum
         )
+
         unique_rows, counts = np.unique(self.Y_top, axis=0, return_counts=True)
         info = {
-            "Number of unique labelsets (ls)": len(unique_rows),
+            "Percentage of unique labelsets (ls)": f"{np.round(len(unique_rows)*100/n, 1)}%",
             "Label density": (row_sum / (n * c)).round(2),
             "Class imbalance": np.mean(imbalance_ratios).round(2),
             "Max example per ls": counts.max(),

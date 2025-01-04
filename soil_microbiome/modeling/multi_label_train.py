@@ -36,7 +36,7 @@ class MLTrain(MLClassification):
 
         # split data into train/test sets using stratified sampling
         stratifier = IterativeStratification(
-            n_splits=2, order=5, sample_distribution_per_fold=[0.2, 0.8]
+            n_splits=2, order=5, sample_distribution_per_fold=[0.25, 0.75]
         )
 
         self.train_idx, self.test_idx = next(stratifier.split(self.X, self.Y))
@@ -75,7 +75,7 @@ class MLTrain(MLClassification):
 
                     file_name = os.path.join(global_vars["model_dir"], f"{method}.pkl")
 
-                    print(f"Saving {func_name} to a file.")
+                    print(f"Saving {self.methods_long[method]} to a file.")
 
                     with open(file_name, "wb") as file:
                         pickle.dump(model, file)
@@ -177,7 +177,7 @@ class MLTrain(MLClassification):
             return f1
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=150, timeout=600)
+        study.optimize(objective, n_trials=100, timeout=600)
 
         best_trial = study.best_trial
 
@@ -207,7 +207,7 @@ class MLTrain(MLClassification):
 
             sigma = trial.suggest_float("sigma", 0.1, 2.0, log=True)
 
-            nn = trial.suggest_categorical("nn", [5, 7, 10])
+            nn = trial.suggest_categorical("nn", list(range(1, 60)))
 
             model = HarmonicFunction(sigma=sigma, nn=nn)
 
@@ -215,7 +215,7 @@ class MLTrain(MLClassification):
 
             soft_labels = model.predict(X_dist_squared, self.train_idx, self.test_idx)
 
-            preds = cmn(soft_labels, self.Y_train)
+            preds = basic(soft_labels, self.Y_train) # threshold at 0.5
 
             f1 = f1_score(self.Y_test, preds, average="micro")
 
@@ -223,8 +223,6 @@ class MLTrain(MLClassification):
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=100, timeout=600)
-
-        best_trial = study.best_trial
 
         best_trial = study.best_trial
 
@@ -347,7 +345,7 @@ class MLTrain(MLClassification):
             }
 
             for label in range(self.Y_train.shape[1]):
-                rf = RandomForestClassifier(**params, random_state=42)
+                rf = RandomForestClassifier(**params, random_state=29)
                 model = rf.fit(self.X_train, self.Y_train[:, label])
                 preds[:, label] = model.predict(self.X_test)
 
@@ -367,7 +365,7 @@ class MLTrain(MLClassification):
         models = {}
 
         for label in range(self.Y.shape[1]):
-            rf = RandomForestClassifier(**best_trial.params, random_state=42)
+            rf = RandomForestClassifier(**best_trial.params, random_state=29)
             models[label] = rf.fit(self.X, self.Y[:, label])
 
         return models
@@ -495,16 +493,15 @@ class MLTrain(MLClassification):
                 "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
                 "subsample": trial.suggest_float("subsample", 0.2, 1.0),
                 "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
-            }
-
-            if param["booster"] in ["gbtree", "dart"]:
-                param["max_depth"] = trial.suggest_int("max_depth", 3, 9, step=2)
-                param["min_child_weight"] = trial.suggest_int("min_child_weight", 2, 10)
-                param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
-                param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
-                param["grow_policy"] = trial.suggest_categorical(
+                "max_depth": trial.suggest_int("max_depth", 2, 50),
+                "min_child_weight": trial.suggest_int("min_child_weight", 2, 10),
+                "eta": trial.suggest_float("eta", 1e-8, 1.0, log=True),
+                "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
+                "grow_policy": trial.suggest_categorical(
                     "grow_policy", ["depthwise", "lossguide"]
-                )
+                    )
+                }
+
 
             if param["booster"] == "dart":
                 param["sample_type"] = trial.suggest_categorical(
@@ -520,14 +517,14 @@ class MLTrain(MLClassification):
                     "skip_drop", 1e-8, 1.0, log=True
                 )
 
-            model = xgb.train(param, dtrain)
-            soft_labels = model.predict(dvalid)
-            preds = np.rint(soft_labels)
-            f1 = f1_score(self.Y_test, preds, average="macro")
+            model = xgb.XGBClassifier(**param)
+            model.fit(self.X_train, self.Y_train)
+            preds = model.predict(self.X_test)
+            f1 = f1_score(self.Y_test, preds, average="micro")
             return f1
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100, timeout=600)
+        study.optimize(objective, n_trials=100)
 
         best_trial = study.best_trial
         print("  Value: {}".format(best_trial.value))
@@ -608,6 +605,14 @@ class MLTrain(MLClassification):
             path=path,
         )
 
-        model.fit(df_train, tuning_data=df_test)
+        model.fit(
+            df_train,
+            tuning_data=df_test,
+            #use_bag_holdout=True,
+            #presets=[
+            #    "good_quality_faster_inference_only_refit",
+            #    "optimize_for_deployment",
+            #],
+        )
 
         return model

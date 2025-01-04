@@ -75,6 +75,9 @@ def iterative_data_split(species):
 
     # create three subsets of data for training, validation and testing, with proportions 60%/20%/20%.
 
+    #Y = species.Y_top[(species.Y_top.sum(axis=1) != 0)] # remove all observations with no top selected species
+    #X = species.X[(species.Y_top.sum(axis=1) != 0)]
+
     num_species = species.Y_top.shape[1]
 
     if num_species < 10:

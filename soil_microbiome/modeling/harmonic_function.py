@@ -27,10 +27,6 @@ class HarmonicFunction:
         @param: dist_matrix_squared (np.ndarray): Precomputed Euclidean distance matrix.
         @param: Y_train (np.ndarray): Training labels or response matrix.
         """
-
-        # if self.dist_matrix_squared is None or self.Y_train is None or self.train_indices is None:
-        #    raise ValueError("The model is not fitted yet. Call 'fit' with training data first.")
-
         self.X = X
         self.Y_train = Y_train
 

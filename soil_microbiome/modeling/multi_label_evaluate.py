@@ -115,8 +115,7 @@ class MLEvaluate(MLClassification):
 
         soft_labels = model.predict(dist_matrix_squared, train_indices, test_indices)
 
-        # convert the soft labels to hard labels using 0.5 threshold
-        preds = basic(soft_labels, model.Y_train)
+        preds = basic(soft_labels, model.Y_train) # threshold at 0.5
 
         return preds
 

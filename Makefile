@@ -10,8 +10,8 @@ clean:
 	rm -rf .mypy_cache
 
 # Target to run tests (assuming you have a tests directory)
-#test:
-#	pytest tests/
+test:
+	pytest soil_microbiome/tests/
 
 # Target to format code using black (assuming you have black installed)
 format:
