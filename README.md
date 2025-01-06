@@ -8,12 +8,12 @@ Given a location with its pedo-climatic conditions, the goal is to predict the c
 
 Predictive models used are:
 
-1. Nearest-neighbour based approaches: (multi-label) k-nearest neighbour (knn)
-2. Label propagation: harmonic function (hf)
-3. Tree-based methods: random forest (rf), gradient boosting (gb), LightGBM (lgbm), XGBoost (xgb), CatBoost
-4. Large-margin classifier: support-vector machine (svm)
-5. Multi-label learners: ensembles of classifier chains (ecc), label powerset (lp)
-6. Auto ML, ensembles of methods/stacking: autogluon 
+* Nearest-neighbour based approaches: (multi-label) k-nearest neighbour (knn)
+* Label propagation: harmonic function (hf)
+* Tree-based methods: random forest (rf), gradient boosting (gb), LightGBM (lgbm), XGBoost (xgb), CatBoost
+* Large-margin classifier: support-vector machine (svm)
+* Multi-label learners: ensembles of classifier chains (ecc), label powerset (lp)
+* Auto ML, ensembles of methods/stacking: autogluon 
 
 All methods, except ecc and lp, are binary relevance learners: learning/classification is done for each label separately.
 On the other hand, ecc and lp leverage label relationships. They both are based on random forest classifier.
