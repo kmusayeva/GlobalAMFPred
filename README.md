@@ -4,6 +4,8 @@ This project is dedicated to the analysis and prediction of arbuscular mycorrhiz
 
 See the GlobalAMF.ipynb for detailed analysis (still ongoing). 
 
+Given a location with its pedo-climatic conditions, the goal is to predict the corresponding AMF community composition as accurately as possible. These problem is handled in the multi-label classification setting.
+
 Predictive models used are:
 
 1. Nearest-neighbour based approaches: (multi-label) k-nearest neighbour (knn)
