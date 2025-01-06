@@ -2,7 +2,7 @@
 
 This project is dedicated to the analysis and prediction of arbuscular mycorrhizal fungi (AMF) data obtained from [Global AM Fungi](https://globalamfungi.com/) website. 
 
-See the [GlobalAMF.ipynb] for detailed analysis (still ongoing). 
+See the GlobalAMF.ipynb for detailed analysis (still ongoing). 
 
 Predictive models used are:
 
@@ -20,13 +20,16 @@ Harmonic function is a transductive learning method.
 
 
 ### Running instructions
+
+#### 1. Copy the directory:
+
 ```
 git clone https://github.com/kmusayeva/GlobalAMFPred
 ```
 
-#### Training:
+#### 2. Train:
 
-To train all models:
+TO train all models:
 
 ```
 # num_species is the number of top most frequent species
@@ -46,7 +49,7 @@ python main.py --mode train --num_species 20 --method  rf autogluon
 ```
 will train rf and autogluon.
 
-#### Evaluation:
+#### 3. Evaluate:
 
 To evaluate all models:
 
@@ -56,7 +59,7 @@ To evaluate all models:
 python main.py --mode eval --num_species 20
 ```
 
-To evaluate some models:
+to evaluate some models:
 
 ```
 # for evaluation, num_species should not be larger than the one the models are trained for
