@@ -29,7 +29,7 @@ git clone https://github.com/kmusayeva/GlobalAMFPred
 
 #### 2. Train:
 
-TO train all models:
+To train all models:
 
 ```
 # num_species is the number of top most frequent species
