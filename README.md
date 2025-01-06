@@ -39,17 +39,17 @@ To train all models:
 python main.py --mode train --num_species 20
 ```
 
-To train some models:
+To train some models use the flag ```--method``` followed by the name of one or more models:
 
 ```
 python main.py --mode train --num_species 20 --method knn
 ```
-will train only knn, or
+trains only knn, or
 
 ```
 python main.py --mode train --num_species 20 --method  rf autogluon
 ```
-will train rf and autogluon.
+trains rf and autogluon.
 
 #### 3. Evaluate:
 
@@ -61,7 +61,7 @@ To evaluate all models:
 python main.py --mode eval --num_species 20
 ```
 
-to evaluate some models:
+To evaluate some models use the flag ```--method``` followed by the name of one or more models:
 
 ```
 # for evaluation, num_species should not be larger than the one the models are trained for
