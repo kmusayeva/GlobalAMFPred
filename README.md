@@ -51,6 +51,15 @@ python main.py --mode train --num_species 20 --method  rf autogluon
 ```
 trains rf and autogluon.
 
+Use the flag ```--v``` to output statistical information about labels, such as, the relative frequency of each label, number of unique label sets,
+minimum, mean, and maximum number of examples for each label set, class imbalance:
+
+```
+# for evaluation, num_species should not be larger than the one the models are trained for
+
+python main.py --mode eval --num_species 20 --v
+```
+
 #### 3. Evaluate:
 
 To evaluate all models:
