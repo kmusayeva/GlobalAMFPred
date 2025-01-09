@@ -9,6 +9,7 @@ from .autogluon_multilabel_predictor import *
 from mlp.thresholding import *
 from joblib import load
 from autogluon.common.utils.log_utils import set_logger_verbosity
+from sklearn.metrics import matthews_corrcoef
 
 set_logger_verbosity(3)
 
@@ -26,6 +27,10 @@ class MLEvaluate(MLClassification):
         super().__init__(species, method)
 
         self.result = pd.DataFrame(index=self.score_names, columns=self.methods)
+
+        self.mcc = pd.DataFrame(index=self.species_names, columns=self.methods)
+
+        self.mcc.index.name = "species"
 
         self.X_column_names = species.X.columns.tolist()
 
@@ -68,9 +73,18 @@ class MLEvaluate(MLClassification):
             for metric, scoring_func, kwargs in self.scores:
                 self.result.loc[metric, method] = round(
                     scoring_func(self.Y, preds, **kwargs), 3
+                    )
+
+            if method=="lp": preds = preds.toarray()
+            for i in range(self.num_species):
+                self.mcc.loc[self.species_names[i], method] = round(
+                    matthews_corrcoef(self.Y[:,i], preds[:,i]), 3
                 )
 
         print(f">>>Results: \n{self.result.to_string()}")
+
+        print(f"\nMatthew correlation coefficient:\n {self.mcc.to_string()}")
+
 
     def multi_label_predict(self, model) -> np.ndarray:
         """
