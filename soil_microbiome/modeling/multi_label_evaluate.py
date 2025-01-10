@@ -10,6 +10,7 @@ from mlp.thresholding import *
 from joblib import load
 from autogluon.common.utils.log_utils import set_logger_verbosity
 from sklearn.metrics import matthews_corrcoef
+from sklearn.metrics import confusion_matrix
 
 set_logger_verbosity(3)
 
@@ -48,12 +49,21 @@ class MLEvaluate(MLClassification):
                 print(f">>>Evaluating model: autogluon...")
 
                 preds = self.autogluon_predict()
+                print(preds)
+                if preds is None: continue
 
             else:
 
                 file_name = os.path.join(global_vars["model_dir"], f"{method}.pkl")
 
-                model = load(file_name)
+                try:
+                    model = load(file_name)
+                except FileNotFoundError:
+                    print(f"Error: The file '{file_name}' does not exist.")
+                    continue
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                    continue
 
                 print(f">>>Evaluating model: {self.methods_long[method]}...")
 
@@ -82,8 +92,13 @@ class MLEvaluate(MLClassification):
                 )
 
         print(f">>>Results: \n{self.result.to_string()}")
+        print(f"\nMatthews correlation coefficient:\n {self.mcc.to_string()}")
 
-        print(f"\nMatthew correlation coefficient:\n {self.mcc.to_string()}")
+        print(">>>Confusion matrices for the most frequent and the rarest species:\n")
+        print(f"{self.species_names[0]}")
+        print(confusion_matrix(self.Y[:, 0], preds[:,0]))
+        print(f"{self.species_names[19]}")
+        print(confusion_matrix(self.Y[:, 19], preds[:, 19]))
 
 
     def multi_label_predict(self, model) -> np.ndarray:
@@ -138,32 +153,58 @@ class MLEvaluate(MLClassification):
         Prediction using autogluon for each label separately.
         """
 
-        root_model_dir = os.path.join(global_vars["model_dir"], "autogluon")
+        try:
+            root_model_dir = os.path.join(global_vars["model_dir"], "autogluon")
 
-        test_data = pd.DataFrame(self.X, columns=self.X_column_names).join(
-            pd.DataFrame(self.Y, columns=self.Y_column_names)
-        )
+            if not os.path.exists(root_model_dir):
+                raise FileNotFoundError(f"Model directory '{root_model_dir}' does not exist.")
 
-        # Initialize an empty DataFrame to store predictions
-        all_predictions = pd.DataFrame()
+            test_data = pd.DataFrame(self.X, columns=self.X_column_names).join(
+                pd.DataFrame(self.Y, columns=self.Y_column_names)
+                )
 
-        # Iterate over each label-specific model directory
-        for label_dir in os.listdir(root_model_dir):
-            if (label_dir == "multilabel_predictor.pkl") or not (
-                "_".join(label_dir.split("_")[1:]) in self.species_names
-            ):
-                continue
-            label_model_path = os.path.join(root_model_dir, label_dir)
-            predictor = TabularPredictor.load(label_model_path, verbosity=0)
-            label_predictions = predictor.predict(test_data)
-            all_predictions[label_dir] = label_predictions
+            all_predictions = pd.DataFrame()
 
-        new_names = [
-            "_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()
-        ]
+            try:
+                label_dirs = os.listdir(root_model_dir)
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Could not list contents of '{root_model_dir}'.")
 
-        all_predictions.columns = new_names
+            for label_dir in label_dirs:
+                if (label_dir == "multilabel_predictor.pkl") or not (
+                        "_".join(label_dir.split("_")[1:]) in self.species_names
+                ):
+                    continue
+                label_model_path = os.path.join(root_model_dir, label_dir)
 
-        preds = all_predictions[self.Y_column_names].to_numpy()
+                try:
+                    predictor = TabularPredictor.load(label_model_path, verbosity=0)
+                except FileNotFoundError:
+                    print(f"Warning: Model file '{label_model_path}' not found. Skipping.")
+                    continue
+                except Exception as e:
+                    print(f"Error loading model from '{label_model_path}': {e}")
+                    continue
 
-        return preds
+                try:
+                    label_predictions = predictor.predict(test_data)
+                except Exception as e:
+                    print(f"Error predicting with model '{label_dir}': {e}")
+                    continue
+
+                all_predictions[label_dir] = label_predictions
+
+            new_names = [
+                "_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()
+            ]
+
+            all_predictions.columns = new_names
+
+            preds = all_predictions[self.Y_column_names].to_numpy()
+
+            return preds
+
+        except Exception as e:
+            print(f"An error occurred in the function: {e}")
+            return None
+
