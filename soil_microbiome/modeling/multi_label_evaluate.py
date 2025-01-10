@@ -49,8 +49,8 @@ class MLEvaluate(MLClassification):
                 print(f">>>Evaluating model: autogluon...")
 
                 preds = self.autogluon_predict()
-                print(preds)
-                if preds is None: continue
+                if preds is None:
+                    continue
 
             else:
 
@@ -83,23 +83,29 @@ class MLEvaluate(MLClassification):
             for metric, scoring_func, kwargs in self.scores:
                 self.result.loc[metric, method] = round(
                     scoring_func(self.Y, preds, **kwargs), 3
-                    )
+                )
 
-            if method=="lp": preds = preds.toarray()
+            if method == "lp":
+                preds = preds.toarray()
             for i in range(self.num_species):
                 self.mcc.loc[self.species_names[i], method] = round(
-                    matthews_corrcoef(self.Y[:,i], preds[:,i]), 3
+                    matthews_corrcoef(self.Y[:, i], preds[:, i]), 3
                 )
 
         print(f">>>Results: \n{self.result.to_string()}")
         print(f"\nMatthews correlation coefficient:\n {self.mcc.to_string()}")
 
-        print(">>>Confusion matrices for the most frequent and the rarest species:\n")
+        print(
+            f">>>{method} confusion matrices for the most frequent and the rarest species:"
+        )
         print(f"{self.species_names[0]}")
-        print(confusion_matrix(self.Y[:, 0], preds[:,0]))
-        print(f"{self.species_names[19]}")
-        print(confusion_matrix(self.Y[:, 19], preds[:, 19]))
-
+        print(confusion_matrix(self.Y[:, 0], preds[:, 0]))
+        print(f"{self.species_names[self.num_species-1]}")
+        print(
+            confusion_matrix(
+                self.Y[:, self.num_species - 1], preds[:, self.num_species - 1]
+            )
+        )
 
     def multi_label_predict(self, model) -> np.ndarray:
         """
@@ -144,7 +150,7 @@ class MLEvaluate(MLClassification):
 
         soft_labels = model.predict(dist_matrix_squared, train_indices, test_indices)
 
-        preds = basic(soft_labels, model.Y_train) # threshold at 0.5
+        preds = basic(soft_labels, model.Y_train)  # threshold at 0.5
 
         return preds
 
@@ -157,22 +163,26 @@ class MLEvaluate(MLClassification):
             root_model_dir = os.path.join(global_vars["model_dir"], "autogluon")
 
             if not os.path.exists(root_model_dir):
-                raise FileNotFoundError(f"Model directory '{root_model_dir}' does not exist.")
+                raise FileNotFoundError(
+                    f"Model directory '{root_model_dir}' does not exist."
+                )
 
             test_data = pd.DataFrame(self.X, columns=self.X_column_names).join(
                 pd.DataFrame(self.Y, columns=self.Y_column_names)
-                )
+            )
 
             all_predictions = pd.DataFrame()
 
             try:
                 label_dirs = os.listdir(root_model_dir)
             except FileNotFoundError:
-                raise FileNotFoundError(f"Could not list contents of '{root_model_dir}'.")
+                raise FileNotFoundError(
+                    f"Could not list contents of '{root_model_dir}'."
+                )
 
             for label_dir in label_dirs:
                 if (label_dir == "multilabel_predictor.pkl") or not (
-                        "_".join(label_dir.split("_")[1:]) in self.species_names
+                    "_".join(label_dir.split("_")[1:]) in self.species_names
                 ):
                     continue
                 label_model_path = os.path.join(root_model_dir, label_dir)
@@ -180,7 +190,9 @@ class MLEvaluate(MLClassification):
                 try:
                     predictor = TabularPredictor.load(label_model_path, verbosity=0)
                 except FileNotFoundError:
-                    print(f"Warning: Model file '{label_model_path}' not found. Skipping.")
+                    print(
+                        f"Warning: Model file '{label_model_path}' not found. Skipping."
+                    )
                     continue
                 except Exception as e:
                     print(f"Error loading model from '{label_model_path}': {e}")
@@ -195,7 +207,8 @@ class MLEvaluate(MLClassification):
                 all_predictions[label_dir] = label_predictions
 
             new_names = [
-                "_".join(name.split("_")[1:]) for name in all_predictions.columns.tolist()
+                "_".join(name.split("_")[1:])
+                for name in all_predictions.columns.tolist()
             ]
 
             all_predictions.columns = new_names
@@ -207,4 +220,3 @@ class MLEvaluate(MLClassification):
         except Exception as e:
             print(f"An error occurred in the function: {e}")
             return None
-

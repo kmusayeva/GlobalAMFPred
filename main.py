@@ -26,12 +26,12 @@ def main():
     parser.add_argument(
         "--method",
         type=str,
-        nargs="*",
+        nargs="+",
         required=False,
         help="Name(s) of learning method(s).",
     )
 
-    parser.add_argument('--v', action='store_true', help="Print label information")
+    parser.add_argument("--v", action="store_true", help="Print label information")
 
     args = parser.parse_args()
 
@@ -43,7 +43,8 @@ def main():
             tax_level=tax_level,
             num_species_interest=args.num_species,
         )
-        if args.v: species.print_info()
+        if args.v:
+            species.print_info()
         MLTrain(species, args.method).train()
 
     elif args.mode == "eval":
@@ -54,7 +55,8 @@ def main():
             tax_level=tax_level,
             num_species_interest=args.num_species,
         )
-        if args.v: species.print_info()
+        if args.v:
+            species.print_info()
         MLEvaluate(species, args.method).evaluate()
 
 

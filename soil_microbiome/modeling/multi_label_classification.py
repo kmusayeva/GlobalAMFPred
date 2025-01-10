@@ -59,18 +59,23 @@ class MLClassification:
             "lgbm": "lightgbm",
         }
 
-        if method is None:
-            self.methods = [
-                "knn",
-                "hf",
-                "svc",
-                "rf",
-                "gb",
-                "xgb",
-                "ecc",
-                "lp",
-                "lgbm",
-                "autogluon",
-            ]
-        else:
-            self.methods = method
+        self.methods = [
+            "knn",
+            "hf",
+            "svc",
+            "rf",
+            "gb",
+            "xgb",
+            "ecc",
+            "lp",
+            "lgbm",
+            "autogluon",
+        ]
+
+        if method is not None:
+
+            if (len(method) == 1) and (len(method[0].split("-")) > 1):
+                self.methods = [m for m in self.methods if m != method[0].split("-")[1]]
+
+            elif set(method).issubset(self.methods):
+                self.methods = method

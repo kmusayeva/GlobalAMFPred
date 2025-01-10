@@ -215,7 +215,7 @@ class MLTrain(MLClassification):
 
             soft_labels = model.predict(X_dist_squared, self.train_idx, self.test_idx)
 
-            preds = basic(soft_labels, self.Y_train) # threshold at 0.5
+            preds = basic(soft_labels, self.Y_train)  # threshold at 0.5
 
             f1 = f1_score(self.Y_test, preds, average="micro")
 
@@ -499,9 +499,8 @@ class MLTrain(MLClassification):
                 "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
                 "grow_policy": trial.suggest_categorical(
                     "grow_policy", ["depthwise", "lossguide"]
-                    )
-                }
-
+                ),
+            }
 
             if param["booster"] == "dart":
                 param["sample_type"] = trial.suggest_categorical(
@@ -608,11 +607,11 @@ class MLTrain(MLClassification):
         model.fit(
             df_train,
             tuning_data=df_test,
-            #use_bag_holdout=True,
-            #presets=[
+            # use_bag_holdout=True,
+            # presets=[
             #    "good_quality_faster_inference_only_refit",
             #    "optimize_for_deployment",
-            #],
+            # ],
         )
 
         return model

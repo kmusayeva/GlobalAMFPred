@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 from soil_microbiome.modeling.stratified_sampling import *
 
+
 def test_iterative_stratification():
     # Setup any required inputs for the function
     Y = np.array(
@@ -46,5 +47,3 @@ def test_iterative_stratification():
     result = any(element in train_indices for element in test_indices)
     expected_result = False
     assert result == expected_result, "There are common indices in train and test sets."
-
-
