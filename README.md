@@ -86,6 +86,5 @@ This project is licensed under the MIT Licence - see the LICENCE.md file for det
 
 ### Author
 * Khadija Musayeva, PhD 
-* Email: [khmusayeva@gmail.com](khmusayeva@gmail.com)
 
 
