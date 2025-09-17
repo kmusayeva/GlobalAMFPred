@@ -1,10 +1,10 @@
 ## AMF Prediction
 
-This project is dedicated to the analysis and prediction of arbuscular mycorrhizal fungi (AMF) data obtained from [Global AM Fungi](https://globalamfungi.com/) website. 
+This project (still ongoing) is dedicated to the analysis and prediction of arbuscular mycorrhizal fungi (AMF) data obtained from [Global AM Fungi](https://globalamfungi.com/) website. 
 
-See the GlobalAMF.ipynb for detailed analysis (still ongoing). 
+See the GlobalAMF.ipynb for detailed analysis (still ongoing). **Important: the dataset is build based on various studies and is very much susceptible to batch effects. This work is done without taken into account these batch effects and gives exagerrated predictive performance. Ongoing work is based on controlling these effects by blocking at the study level.**
 
-Given a location with its pedo-climatic conditions, the goal is to predict the corresponding AMF community composition as accurately as possible. These problem is handled in the multi-label classification setting.
+Given a location with its pedo-climatic conditions, the goal is to predict the corresponding AMF community composition as accurately as possible. These problem is handled in the multi-label classification setting. 
 
 Predictive models used are:
 
